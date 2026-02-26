@@ -31,27 +31,6 @@ A Claude Code subagent that maintains a curated catalog of geospatial datasets a
 datasets/
   index.yaml                — Tier 1: lightweight index (loaded fully into context)
   profiles/                 — Tier 2: detailed dataset profiles (loaded on demand)
-    sentinel-2-l2a.yaml       Sentinel-2 L2A multispectral (10m, free)
-    sentinel-1-rtc.yaml       Sentinel-1 RTC SAR (10m, free)
-    landsat-8-9.yaml          Landsat 8/9 multispectral+thermal (30m, free)
-    naip.yaml                 NAIP aerial imagery (0.6m, US only, free)
-    pleiades.yaml             Pleiades Neo (1m, 6-band, commercial)
-    skysat.yaml               Planet SkySat (1m, RGB+NIR, commercial)
-    superdove.yaml            Planet SuperDove (3m, 8-band, commercial)
-    spot-ms.yaml              SPOT multispectral (6m, commercial)
-    worldview.yaml            Maxar WorldView (2m/0.5m pan, commercial)
-    wyvern.yaml               Wyvern hyperspectral (5.3m, 23-band, commercial)
-    capella.yaml              Capella X-band SAR (1m, commercial)
-    umbra.yaml                Umbra X-band SAR (1m, commercial)
-    esa-worldcover.yaml       ESA WorldCover land classification (10m, free)
-    io-lulc-annual.yaml       IO LULC Annual land cover (10m, 2017-2023, free)
-    cop-dem.yaml              Copernicus DEM (30m, free)
-    nasadem.yaml              NASADEM reprocessed SRTM (30m, free)
-    hwsd2-soils.yaml          Harmonized World Soil Database v2 (~1km, free)
-    gpw-population.yaml       Gridded Population of the World (~1km, free)
-    udel-weather-normals.yaml U.Delaware climate normals (~55km, free)
-    modis-nbar-vegetation.yaml MODIS NBAR vegetation indices (500m, free)
-    osm-features.yaml         OpenStreetMap vector features (free)
   recipes/                  — Data Engine access guides and code snippets
     {id}.md                   Natural language guide for each dataset
     {id}.py                   Python code snippets using hum_ai.data_engine
@@ -62,6 +41,32 @@ schemas/
 
 .beads/                     — Beads issue tracker (dependency-aware task tracking)
 ```
+
+### Dataset Profiles
+
+| Profile | Dataset | Resolution | Access |
+|---------|---------|------------|--------|
+| `sentinel-2-l2a.yaml` | Sentinel-2 L2A multispectral | 10m | Free |
+| `sentinel-1-rtc.yaml` | Sentinel-1 RTC SAR | 10m | Free |
+| `landsat-8-9.yaml` | Landsat 8/9 multispectral + thermal | 30m | Free |
+| `naip.yaml` | NAIP aerial imagery (US only) | 0.6m | Free |
+| `pleiades.yaml` | Pleiades Neo (6-band) | 1m | Commercial |
+| `skysat.yaml` | Planet SkySat (RGB+NIR) | 1m | Commercial |
+| `superdove.yaml` | Planet SuperDove (8-band) | 3m | Commercial |
+| `spot-ms.yaml` | SPOT multispectral | 6m | Commercial |
+| `worldview.yaml` | Maxar WorldView (0.5m pan) | 2m | Commercial |
+| `wyvern.yaml` | Wyvern hyperspectral (23-band) | 5.3m | Commercial |
+| `capella.yaml` | Capella X-band SAR | 1m | Commercial |
+| `umbra.yaml` | Umbra X-band SAR | 1m | Commercial |
+| `esa-worldcover.yaml` | ESA WorldCover land classification | 10m | Free |
+| `io-lulc-annual.yaml` | IO LULC Annual land cover (2017–2023) | 10m | Free |
+| `cop-dem.yaml` | Copernicus DEM | 30m | Free |
+| `nasadem.yaml` | NASADEM reprocessed SRTM | 30m | Free |
+| `hwsd2-soils.yaml` | Harmonized World Soil Database v2 | ~1km | Free |
+| `gpw-population.yaml` | Gridded Population of the World | ~1km | Free |
+| `udel-weather-normals.yaml` | U.Delaware climate normals | ~55km | Free |
+| `modis-nbar-vegetation.yaml` | MODIS NBAR vegetation indices | 500m | Free |
+| `osm-features.yaml` | OpenStreetMap vector features | Feature-level | Free |
 
 ## How It Works
 
