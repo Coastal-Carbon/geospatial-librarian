@@ -1,0 +1,170 @@
+id: worldview
+name: Maxar WorldView Multispectral Imagery
+provider: Maxar Technologies
+
+spatial:
+  resolution: |
+    ~0.5m: Panchromatic (single band, grayscale)
+    ~1.84m (native) / ~2.0m (commercial product): 8 multispectral bands
+    Pan-sharpened products available at ~0.5m with multispectral color
+  coverage: >
+    Global — the largest commercial very-high-resolution satellite imagery
+    archive in existence. WorldView-2 (launched 2009) and WorldView-3
+    (launched 2014) provide the 8-band multispectral capability. Coverage
+    is tasked (collected on demand or from archive), not systematic like
+    Sentinel-2, so spatial completeness varies by region. Urban areas,
+    conflict zones, and areas of commercial interest have the densest
+    archives. Remote/low-demand areas may have sparse coverage.
+  coordinate_system: UTM zones / WGS84 (varies by product)
+
+temporal:
+  cadence: >
+    Tasking-based revisit, not a fixed cadence. WorldView constellation
+    can theoretically revisit any point on Earth in ~1 day, but actual
+    collection depends on tasking priority and cloud conditions. Archive
+    imagery is available for many areas with multiple acquisitions per
+    year in high-demand regions.
+  archive_start: "2009 (WorldView-2); 2014 (WorldView-3 with full 8-band MS)"
+  latency: >
+    New tasking orders typically delivered within days to weeks depending
+    on priority level. Archive imagery available within hours of order
+    placement via Hum's internal STAC catalog.
+
+bands:
+  - "Coastal Blue (425nm, ~1.84m)"
+  - "Blue (480nm, ~1.84m)"
+  - "Green (545nm, ~1.84m)"
+  - "Yellow (610nm, ~1.84m)"
+  - "Red (660nm, ~1.84m)"
+  - "Red Edge (730nm, ~1.84m)"
+  - "Near-Infrared 1 (835nm, ~1.84m)"
+  - "Near-Infrared 2 (950nm, ~1.84m)"
+  - "Panchromatic (~0.5m, single broadband visible)"
+
+formats:
+  native: GeoTIFF (typically delivered as orthorectified strips or tiles)
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). Imagery in Hum's STAC catalog is
+    served as COG. Pan-sharpened products merge panchromatic detail
+    with multispectral color at ~0.5m.
+
+access:
+  method: >
+    Hum's internal STAC FastAPI catalog — collection ID "worldview".
+    Search and access via the data engine library using
+    CollectionName.WORLDVIEW. Imagery is stored in Hum's cloud
+    infrastructure and served through the STAC API.
+  auth: >
+    Commercial license — requires Hum platform access. WorldView
+    imagery is among the most expensive commercial EO data. Tasking
+    new acquisitions costs significantly more than archive purchases.
+  alternatives: >
+    Maxar SecureWatch (direct from Maxar, government/enterprise).
+    Maxar Open Data Program (limited free disaster response imagery).
+    Google Earth Engine (select WorldView basemaps, not full archive).
+    AWS / Maxar ARD (Analysis Ready Data tiles for enterprise customers).
+
+strengths: |
+  The gold standard for very-high-resolution commercial Earth observation.
+  The ~0.5m panchromatic resolution is the industry benchmark for optical
+  detail — sufficient to identify individual vehicles, small structures,
+  narrow roads, and fine-grained land cover features. Pan-sharpened
+  products combine this spatial detail with multispectral information.
+
+  The 8-band multispectral capability is unique among VHR satellites.
+  The Yellow band (~610nm) is rare in satellite sensors and improves
+  discrimination of vegetation stress, senescence, and certain material
+  types. The dual NIR bands (NIR1 at 835nm, NIR2 at 950nm) enable more
+  nuanced vegetation and water analysis than sensors with a single NIR
+  band — NIR2 in particular is less affected by atmospheric water vapor
+  absorption, making it useful for atmospheric characterization and
+  more robust NDVI calculations.
+
+  The Coastal Blue band (~425nm) penetrates shallow water better than
+  standard blue, enabling bathymetric mapping and benthic habitat
+  classification in clear coastal waters.
+
+  Maxar's archive is the largest commercial VHR collection in the world,
+  with imagery spanning back to the early 2000s (including legacy
+  QuickBird and WorldView-1 data). For historical high-resolution
+  analysis, there is often no alternative.
+
+  Stereo collection capability enables 3D surface model generation
+  (DSMs) from stereo pairs — useful for building height estimation,
+  terrain modeling, and volumetric analysis at sub-meter resolution.
+
+limitations: |
+  The most expensive dataset in the catalog. Archive imagery costs
+  several dollars per square kilometer, and new tasking costs
+  substantially more. Budget constraints often limit the spatial or
+  temporal extent of analysis. For broad-area monitoring, Sentinel-2
+  or Landsat are far more cost-effective.
+
+  Large data volumes — a single WorldView scene at full resolution can
+  be several gigabytes. Multi-date analysis over large areas generates
+  very large datasets that require significant storage and processing
+  infrastructure.
+
+  Requires careful orthorectification. Raw or basic-level products have
+  significant geometric distortions, especially in areas with terrain
+  relief. Accurate orthorectification requires a good DEM (Copernicus
+  DEM or better). Without proper orthorectification, multi-temporal
+  analysis and fusion with other datasets will have alignment errors.
+
+  Tasking-based collection means no guaranteed revisit cadence. Unlike
+  Sentinel-2's systematic 5-day revisit, WorldView imagery is collected
+  when tasked or opportunistically. Time series analysis requires
+  careful assessment of what archive imagery is actually available for
+  your AOI and time period.
+
+  Cloud cover is a constraint as with all optical sensors. At ~0.5m
+  resolution, even thin clouds and haze significantly degrade image
+  quality. No onboard cloud masking layer is provided — cloud detection
+  must be performed as part of preprocessing.
+
+  No SWIR or thermal bands. Cannot perform the SWIR-based analyses
+  possible with Sentinel-2 or Landsat (burn severity, mineral mapping,
+  moisture content). For those capabilities at high resolution, no
+  single-sensor solution currently exists.
+
+preprocessing_notes: |
+  Orthorectification is critical. If working with Ortho Ready Standard
+  (OR2A) products, apply a DEM-based orthorectification using the
+  provided RPCs (Rational Polynomial Coefficients). Copernicus DEM
+  GLO-30 is usually sufficient for flat to moderate terrain; use a
+  higher-resolution DEM for mountainous areas. Products ordered as
+  "Ortho" from Maxar are pre-orthorectified but verify alignment
+  against reference data.
+
+  Radiometric calibration: WorldView imagery is delivered as digital
+  numbers (DN). Convert to top-of-atmosphere (TOA) reflectance using
+  the calibration coefficients in the metadata (IMD/XML files). For
+  surface reflectance, apply atmospheric correction (e.g., FLAASH,
+  6S, or empirical line method). No standard L2A product exists as
+  with Sentinel-2.
+
+  Pan-sharpening: If you need multispectral analysis at ~0.5m, apply
+  a pan-sharpening algorithm (Gram-Schmidt, Brovey, or NNDiffuse) to
+  merge the panchromatic and multispectral bands. Be aware that
+  pan-sharpening can introduce spectral distortion — validate band
+  ratios and indices against the native multispectral data.
+
+  Cloud/shadow detection: No SCL equivalent is provided. Use automated
+  cloud detection tools (e.g., Fmask adapted for VHR, or deep learning
+  approaches) or manual QA. Shadow detection is especially important
+  at sub-meter resolution where building shadows can cover significant
+  portions of urban scenes.
+
+  For the data engine: WorldView imagery is accessed via
+  CollectionName.WORLDVIEW from Hum's STAC FastAPI catalog. The 8
+  multispectral bands are available with IDs: 'Coastal Blue', 'Blue',
+  'Green', 'Yellow', 'Red', 'Red Edge', 'Near-Infrared 1',
+  'Near-Infrared 2'. Native resolution is 1.84m; commercial products
+  are typically resampled to 2.0m. Data type is uint16 with a missing
+  value of 0.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # For broader spatial/temporal context and SWIR capability
+  - pleiades  # Alternative VHR commercial source for comparison or gap-filling
+  - cop-dem  # Essential for orthorectification and terrain analysis
+  - naip  # Free VHR validation data (US only)

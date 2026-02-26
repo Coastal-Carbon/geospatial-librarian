@@ -1,0 +1,177 @@
+id: wyvern
+name: Wyvern Hyperspectral Satellite Imagery
+provider: Wyvern
+
+spatial:
+  resolution: |
+    5.3m: All 23 hyperspectral bands at uniform resolution.
+    Every band from 503nm to 799nm is delivered at the same 5.3m GSD.
+  coverage: >
+    Global coverage via tasking (new acquisitions on demand) and archive.
+    Wyvern is a relatively new commercial constellation, so archive holdings
+    are still growing. Coverage density is uneven — areas that have been
+    tasked will have data, but broad systematic coverage comparable to
+    Sentinel-2 should not be expected. Commercial license required.
+  coordinate_system: UTM / WGS84 (EPSG varies by zone)
+
+temporal:
+  cadence: >
+    Tasking-based constellation — not a fixed revisit schedule.
+    Revisit capability is growing as the constellation expands.
+    Actual acquisition depends on tasking priority and scheduling.
+    Archive imagery availability varies by location.
+  archive_start: "2023 (early commercial operations)"
+  latency: >
+    Tasking orders fulfilled on a commercial schedule. Archive imagery
+    accessible through Hum's STAC FastAPI after ingestion. Latency
+    depends on Hum's ingestion pipeline from Wyvern's delivery system.
+
+bands:
+  - "Band_503nm - Green (503nm, 5.3m)"
+  - "Band_510nm - Green (510nm, 5.3m)"
+  - "Band_519nm - Green (519nm, 5.3m)"
+  - "Band_535nm - Green (535nm, 5.3m)"
+  - "Band_549nm - Green (549nm, 5.3m)"
+  - "Band_570nm - Green (570nm, 5.3m)"
+  - "Band_584nm - Yellow (584nm, 5.3m)"
+  - "Band_600nm - Yellow (600nm, 5.3m)"
+  - "Band_614nm - Yellow (614nm, 5.3m)"
+  - "Band_635nm - Red (635nm, 5.3m)"
+  - "Band_649nm - Red (649nm, 5.3m)"
+  - "Band_660nm - Red (660nm, 5.3m)"
+  - "Band_669nm - Red (669nm, 5.3m)"
+  - "Band_679nm - Red (679nm, 5.3m)"
+  - "Band_690nm - Red (690nm, 5.3m)"
+  - "Band_699nm - Red (699nm, 5.3m)"
+  - "Band_711nm - Red Edge (711nm, 5.3m)"
+  - "Band_722nm - Red Edge (722nm, 5.3m)"
+  - "Band_734nm - Red Edge (734nm, 5.3m)"
+  - "Band_750nm - Red Edge (750nm, 5.3m)"
+  - "Band_764nm - Red Edge (764nm, 5.3m)"
+  - "Band_782nm - Red Edge (782nm, 5.3m)"
+  - "Band_799nm - NIR (799nm, 5.3m)"
+
+formats:
+  native: GeoTIFF (Cloud-Optimized) served via Hum's internal STAC FastAPI
+  common_conversions: >
+    Already served as COG from Hum's STAC catalog. No format conversion
+    typically needed for Data Engine workflows.
+
+access:
+  method: >
+    Hum's internal STAC FastAPI catalog (catalog_id: 'stac-fastapi',
+    collection_id: 'wyvern'). Accessed programmatically through the
+    Data Engine library using CollectionName.WYVERN.
+  auth: >
+    Commercial license required. Data is not publicly available. Access
+    is through Hum's internal infrastructure, which holds licensed
+    Wyvern imagery. Individual users do not need their own Wyvern
+    license — Hum's organizational license covers Data Engine access.
+  alternatives: >
+    Wyvern's own commercial platform (direct purchase). No public or
+    open-access mirrors exist for this data.
+
+strengths: |
+  The only hyperspectral satellite dataset in this catalog. With 23
+  contiguous bands spanning 503-799nm at approximately 10-15nm spectral
+  sampling intervals, Wyvern provides fine spectral discrimination that
+  is fundamentally impossible with broadband multispectral sensors like
+  Sentinel-2, SuperDove, or Pleiades.
+
+  This contiguous spectral coverage enables analysis that no other dataset
+  in the catalog can support:
+
+  - Mineral identification: Narrow absorption features in the visible and
+    near-infrared can distinguish specific mineral compositions (iron oxides,
+    clays, carbonates) that appear identical in broadband imagery.
+  - Vegetation species differentiation: Subtle spectral signatures in the
+    red edge (711-782nm) and green (503-570nm) regions allow separation of
+    plant species that have nearly identical NDVI values. The 6 red edge
+    bands provide far more detailed characterization of chlorophyll content,
+    leaf structure, and canopy chemistry than Sentinel-2's 3 red edge bands.
+  - Water quality analysis: Contiguous visible bands (503-699nm) enable
+    detection of chlorophyll-a concentrations, suspended sediments, colored
+    dissolved organic matter (CDOM), and harmful algal blooms through their
+    distinct spectral absorption signatures.
+  - Soil composition analysis: The continuous spectral profile across the
+    visible-NIR range helps discriminate soil types, organic matter content,
+    and moisture conditions.
+
+  At 5.3m resolution, individual buildings, road segments, and large trees
+  are resolvable, making this a moderate-to-high spatial resolution dataset
+  as well. The combination of hyperspectral detail with meter-scale spatial
+  resolution is rare in the satellite industry.
+
+  Already ingested into Hum's STAC catalog, making it accessible through
+  the standard Data Engine pipeline without separate procurement.
+
+limitations: |
+  Commercial and relatively expensive — this is not open data. Availability
+  is limited to what Hum has licensed and ingested from Wyvern.
+
+  Wyvern is a relatively new and small constellation. Archive holdings are
+  limited compared to mature programs like Sentinel-2 or Landsat. Do not
+  assume coverage exists for a given area and time — always check
+  availability before designing a workflow around Wyvern data.
+
+  No fixed revisit cadence. Tasking-based acquisition makes consistent
+  time series analysis difficult. For temporal monitoring, pair with a
+  systematic mission like Sentinel-2 or SuperDove.
+
+  Spectral range is limited to 503-799nm (visible through near-infrared).
+  There are no SWIR bands (1000-2500nm), which means moisture-related
+  indices (NDMI, NBR) and many mineral identification features in the
+  SWIR are not available. For SWIR analysis, pair with Sentinel-2 or
+  Landsat.
+
+  Hyperspectral data volumes are large. With 23 bands per scene at uint16
+  precision, a single acquisition produces substantially more data than a
+  comparable multispectral scene. Processing workflows must account for
+  higher memory and storage requirements.
+
+  Hyperspectral analysis requires specialized techniques. Standard
+  broadband indices (NDVI, NDWI) can be computed but do not fully exploit
+  the spectral richness. To realize the full value of this data, analysts
+  should be familiar with spectral unmixing, continuum removal, derivative
+  spectroscopy, or machine learning approaches designed for high-dimensional
+  spectral data.
+
+  No built-in cloud mask or scene classification layer is provided. Cloud
+  and shadow detection must be handled by the analyst.
+
+preprocessing_notes: |
+  Wyvern imagery in Hum's STAC catalog is served as Cloud-Optimized
+  GeoTIFFs, so no format conversion is needed for standard Data Engine
+  workflows.
+
+  Band values are stored as uint16 with a missing_value of 0. Be aware
+  that zero-valued pixels represent no-data, not a valid reflectance
+  measurement.
+
+  When working with all 23 bands, data volumes are significant. If your
+  analysis only requires specific spectral regions, select a subset of
+  band_ids in the CollectionInput to reduce I/O and memory usage. For
+  example, a vegetation-focused analysis might use only the red edge
+  bands (Band_711nm through Band_782nm) plus a red reference band.
+
+  For cross-sensor analysis (e.g., Wyvern + Sentinel-2), note that
+  Wyvern's narrow bands do not correspond 1:1 to Sentinel-2's broadband
+  channels. A single Sentinel-2 band integrates signal across a wide
+  wavelength range that may span several Wyvern bands. Harmonization
+  requires either spectral convolution of Wyvern bands to match
+  Sentinel-2's spectral response functions, or working in a common
+  spectral feature space.
+
+  Cloud masking is not automatically provided. Implement your own cloud
+  detection or use quality filtering capabilities in the Data Engine.
+
+  For spectral analysis techniques (continuum removal, derivative
+  analysis, spectral angle mapping), the bands should be treated as an
+  ordered spectral sequence from 503nm to 799nm. The band_names in
+  SOURCE_INFO encode both the spectral region and wavelength (e.g.,
+  Green_503, Red_649, Rededge_711, Nir_799).
+
+commonly_paired_with:
+  - sentinel-2-l2a  # For temporal density, SWIR bands, and broad-area context
+  - superdove  # For higher-cadence temporal coverage at similar resolution
+  - pleiades  # For higher spatial resolution multispectral complement

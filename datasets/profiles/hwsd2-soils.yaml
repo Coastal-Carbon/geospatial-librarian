@@ -1,0 +1,145 @@
+id: hwsd2-soils
+name: Harmonized World Soil Database v2 (HWSD2)
+provider: FAO / IIASA (UN Food and Agriculture Organization / International Institute for Applied Systems Analysis)
+
+spatial:
+  resolution: |
+    30 arc-seconds (~1 km at the equator, finer at higher latitudes).
+    Single-layer classified raster where each pixel contains a soil
+    mapping unit (SMU) identifier. Actual soil property values are
+    retrieved by joining the raster values to a CSV lookup table
+    (HWSD2_LAYERS.csv) containing 48 attributes across ~408,000 rows.
+  coverage: >
+    Global land surfaces. Compiled from national and regional soil
+    surveys contributed by FAO member states. Coverage is nominally
+    complete over all land areas, but underlying source data varies
+    significantly in age, detail, and methodology across regions.
+    Higher quality in Europe, North America, and parts of East Asia;
+    lower quality in parts of Africa, Central Asia, and small islands.
+  coordinate_system: WGS84 (EPSG:4326)
+
+temporal:
+  cadence: >
+    Static product — not updated on a regular schedule. Represents a
+    synthesis of soil survey data collected over several decades. HWSD2
+    was released in 2023 as an update to the original HWSD v1.2 (2012).
+  archive_start: "2023 (HWSD2 release); underlying surveys span 1950s–2020s"
+  latency: N/A — static product with no planned update cycle.
+
+layers:
+  - "Sand content (%) — mass fraction of sand in the fine earth fraction"
+  - "Clay content (%) — mass fraction of clay in the fine earth fraction"
+  - "Organic carbon (g/kg) — soil organic carbon concentration"
+  - "Total nitrogen (g/kg) — total nitrogen concentration"
+  - "(48 additional attributes available in the full lookup table, including silt, pH, CEC, bulk density, gravel content, and others)"
+
+formats:
+  native: GeoTIFF raster (HWSD2_RASTER.tif) plus CSV lookup table (HWSD2_LAYERS.csv)
+  common_conversions: >
+    The classified raster must be joined to the CSV to produce
+    continuous-value layers. After joining, individual property layers
+    can be exported as standard GeoTIFFs or Cloud-Optimized GeoTIFFs.
+    The Data Engine performs this join at ingest time and stores
+    results indexed by H3 cell.
+
+access:
+  method: >
+    S3 bucket (cc-dataocean/soils/harmonized_world_soils_database_v2/).
+    The raster is at HWSD2_RASTER.tif and the lookup table is at
+    HWSD2_DB/HWSD2_LAYERS.csv. Accessed via boto3 / rasterio with
+    an AWS session.
+  auth: >
+    AWS credentials required for cc-dataocean S3 bucket access (Hum
+    internal). The original data is freely available from FAO without
+    authentication.
+  alternatives: >
+    FAO Data Portal (https://openknowledge.fao.org) — free download
+    after accepting the license terms. Also available via the IIASA
+    HWSD Viewer (https://hwsd.fao.org/) for interactive exploration.
+
+strengths: |
+  The best freely available global soil properties dataset. HWSD2 is the
+  standard reference for any analysis requiring soil texture, carbon
+  content, or nutrient information at continental to global scales.
+
+  Essential for carbon stock estimation and carbon modeling — the organic
+  carbon and total nitrogen layers are direct inputs to soil carbon
+  models (RothC, Century, etc.) and MRV (Measurement, Reporting, and
+  Verification) workflows for nature-based carbon projects.
+
+  Widely used in agriculture (crop suitability, irrigation planning),
+  ecology (habitat modeling, species distribution), hydrology (infiltration
+  and runoff estimation from soil texture), and land degradation
+  assessment. Sand and clay fractions determine hydraulic conductivity,
+  water-holding capacity, and erosion susceptibility.
+
+  The 48-attribute lookup table provides far more than the four layers
+  the Data Engine currently extracts. Analysts can pull additional
+  properties (silt, pH, cation exchange capacity, bulk density, gravel
+  content, electrical conductivity, gypsum, calcium carbonate) from the
+  same source data without additional downloads.
+
+  HWSD2 represents a major quality improvement over HWSD v1.2, with
+  updated soil mapping in many regions and better harmonization of
+  source datasets.
+
+limitations: |
+  The ~1 km resolution cannot capture local soil variability. Soil
+  properties can change dramatically over tens of meters due to
+  topography, drainage, and parent material. For site-level analysis
+  (individual farms, construction sites, small watersheds), the HWSD2
+  values should be treated as regional averages, not ground truth.
+
+  Underlying soil surveys vary enormously in age (1950s to 2020s) and
+  methodology. In data-sparse regions the mapped values may be based on
+  very few observations extrapolated over large areas. There is no
+  per-pixel uncertainty or confidence layer.
+
+  The classified raster architecture means each pixel is assigned to a
+  single soil mapping unit. The Data Engine currently returns attributes
+  for the majority class within each H3 cell, which can miss important
+  soil heterogeneity when multiple soil types are present. A weighted-
+  average approach would be more accurate but is not yet implemented.
+
+  Depth representation is simplified. The lookup table provides values
+  for standard depth intervals but does not capture continuous soil
+  profile variation. For detailed pedological work, field sampling or
+  higher-resolution products (SoilGrids 250m, POLARIS for CONUS) may
+  be more appropriate.
+
+  The raster uses integer class codes that must be joined to the CSV
+  lookup table — the raw raster values are not directly interpretable
+  as soil properties. This adds a processing step compared to datasets
+  that store continuous values directly in the raster.
+
+preprocessing_notes: |
+  The Data Engine handles HWSD2 through the SoilsAncillaryData class
+  in hum_ai.data_engine.ancillary.soils. The workflow is:
+
+  1. Load the classified raster (HWSD2_RASTER.tif) from S3.
+  2. Perform a categorical zonal summary to find the majority soil
+     mapping unit (SMU) ID within each H3 cell.
+  3. Read the lookup table (HWSD2_LAYERS.csv, ~408,000 rows) and
+     join on the SMU ID to retrieve sand, clay, organic_carbon, and
+     total_nitrogen values.
+  4. Output a DataFrame indexed by H3 cell ID.
+
+  The raster is read via rasterio with an AWS session (boto3). The
+  categorical zonal summary uses rasterstats under the hood. For H3
+  cells smaller than the raster pixel spacing (~1 km), the
+  all_touched=True flag is automatically enabled.
+
+  For standalone use outside the Data Engine, download both files from
+  FAO, load the raster with rasterio or GDAL, and perform a table join
+  using pandas. The raster pixel values are integer IDs that match the
+  'HWSD2_SMU_ID' column in the CSV.
+
+  If working at a finer resolution than ~1 km, be aware that the data
+  is genuinely ~1 km — resampling to finer grids does not add real
+  spatial detail.
+
+commonly_paired_with:
+  - nasadem            # Terrain and slope affect soil formation and erosion
+  - esa-worldcover     # Land cover context for soil interpretation
+  - udel-weather-normals  # Climate context for soil carbon modeling
+  - gpw-population     # Human pressure context for land degradation assessment

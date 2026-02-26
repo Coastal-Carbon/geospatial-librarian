@@ -1,0 +1,147 @@
+id: skysat
+name: Planet SkySat Multispectral Imagery
+provider: Planet Labs PBC
+
+spatial:
+  resolution: |
+    ~0.5m panchromatic (pan-sharpened products), ~1m multispectral (4-band).
+    All four spectral bands delivered at the same resolution. The
+    SOURCE_INFO in the data engine records the working resolution as 1.0m
+    for the multispectral product.
+  coverage: >
+    Global (tasking and archive). SkySat is a commercial tasking constellation,
+    so coverage depends on what has been ordered and acquired. The archive
+    contains imagery over areas of commercial interest — urban centers,
+    infrastructure, agricultural regions, disaster zones — but is not a
+    systematic global survey. Gaps are expected over open ocean, polar
+    regions, and areas with no customer demand.
+  coordinate_system: UTM / WGS84 (EPSG varies by zone)
+
+temporal:
+  cadence: >
+    The SkySat constellation (21 satellites as of 2024) can revisit any
+    point on Earth multiple times per day when tasked. Archive revisit
+    varies by location — high-demand areas may have daily or weekly
+    coverage, while other areas may have only a handful of acquisitions.
+    Not a systematic survey mission — revisit is demand-driven.
+  archive_start: "2013 (initial SkySat-1 launch); constellation expanded significantly 2017-2020"
+  latency: >
+    Near real-time tasking turnaround is possible (hours). Archive imagery
+    available through Hum's internal STAC FastAPI is queryable immediately.
+    New tasking orders typically delivered within 24 hours of acquisition.
+
+bands:
+  - "Blue (visible, ~450-515nm, 1m)"
+  - "Green (visible, ~515-595nm, 1m)"
+  - "Red (visible, ~605-695nm, 1m)"
+  - "NIR (near-infrared, ~740-900nm, 1m)"
+
+formats:
+  native: >
+    GeoTIFF (orthorectified, radiometrically corrected). Planet delivers
+    ortho scene and ortho collect products. Scenes are individual camera
+    frames; collects are mosaicked strips.
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). Data in Hum's STAC catalog is stored
+    as COG for efficient cloud-native access.
+
+access:
+  method: >
+    Hum's internal STAC FastAPI (catalog_id: 'stac-fastapi',
+    collection_id: 'skysat'). Queried via the hum_ai.stac.search module
+    and the data engine's CollectionName.SKYSAT enum.
+  auth: >
+    Commercial license — requires Hum platform credentials. Not publicly
+    accessible. Planet API access requires a separate Planet subscription
+    for direct tasking or archive access outside Hum's holdings.
+  alternatives: >
+    Planet Explorer (planet.com) for browsing and ordering directly from
+    Planet. Google Earth Engine hosts some SkySat archive imagery. Planet's
+    own STAC-compliant Orders API for programmatic access with a Planet
+    subscription.
+
+strengths: |
+  Sub-meter resolution (0.5m pan-sharpened, 1m multispectral) makes SkySat
+  one of the highest-resolution commercial optical sensors available. At
+  this resolution, individual vehicles, building structural details, narrow
+  roads, small boats, and infrastructure components are clearly visible.
+
+  The 21-satellite constellation enables extremely high revisit rates —
+  multiple passes per day over tasked areas. This makes SkySat particularly
+  well-suited for rapid change detection, disaster response monitoring,
+  construction progress tracking, and any application requiring frequent
+  temporal updates at very high spatial resolution.
+
+  SkySat's unique video capability (up to 120 seconds of HD video at
+  30fps from orbit) enables moving-object analysis — traffic flow, vessel
+  tracking, and event monitoring — that no other commercial optical sensor
+  at this price point provides.
+
+  The NIR band enables basic vegetation analysis (NDVI) at sub-meter
+  resolution, which is valuable for precision agriculture, urban tree
+  canopy assessment, and fine-scale habitat mapping where 10m Sentinel-2
+  data is too coarse.
+
+  Already ingested into Hum's STAC FastAPI, so it integrates directly
+  with the data engine pipeline via CollectionName.SKYSAT — no additional
+  data procurement workflow needed for imagery in the existing archive.
+
+limitations: |
+  Commercial data — requires a paid license. Not suitable for projects
+  that need open/free data, and redistribution is restricted by Planet's
+  licensing terms.
+
+  Only 4 spectral bands (Blue, Green, Red, NIR). No red edge, no SWIR,
+  no thermal. This significantly limits spectral analysis compared to
+  Sentinel-2 (13 bands), Pleiades Neo (6 bands with red edge), or
+  WorldView (8 bands). You can compute NDVI but not red-edge indices
+  (NDRE), moisture indices (NDMI/NDWI using SWIR), or burn indices (NBR).
+
+  Lower spectral capability than other commercial VHR sensors:
+  Pleiades Neo offers a red edge band, and WorldView-3 offers 8
+  multispectral bands plus SWIR. If spectral discrimination is critical
+  (e.g., mineral mapping, detailed vegetation species classification),
+  SkySat is not the best choice.
+
+  Archive coverage is patchy and demand-driven — unlike Sentinel-2 or
+  Landsat which systematically image the entire globe, SkySat only has
+  data where someone paid to collect it. For a given AOI, you may find
+  zero archive imagery, or you may need to submit a new tasking order.
+
+  Smaller swath width (~8km for individual scenes) compared to Sentinel-2
+  (~290km) or Landsat (~185km) means covering large areas requires many
+  scenes and is significantly more expensive.
+
+preprocessing_notes: |
+  SkySat imagery in Hum's STAC catalog is delivered as orthorectified,
+  radiometrically corrected GeoTIFF (visual or analytic products). For
+  most workflows, no additional geometric correction is needed.
+
+  For quantitative analysis (e.g., time-series NDVI comparison), verify
+  that you are using the analytic (surface reflectance) product rather
+  than the visual (display-optimized) product. The analytic product has
+  calibrated reflectance values suitable for spectral index computation.
+
+  When combining SkySat with other sensors (e.g., Sentinel-2 for spectral
+  depth), be aware of the resolution mismatch. You will need to either
+  downsample SkySat to match Sentinel-2's 10m grid, or upsample Sentinel-2
+  (with appropriate caveats about information content). The data engine
+  handles this via the CollectionInput resolution parameter.
+
+  Band order in the data engine is: Blue (0), Green (1), Red (2), NIR (3),
+  matching the COLLECTION_BAND_MAP in ingredients.py. The band IDs used
+  for STAC asset access are: 'Blue', 'Green', 'Red', 'Near-Infrared'.
+
+  For large-area mosaicking, note that SkySat scenes have a small footprint.
+  Expect to mosaic many scenes for areas larger than a few square km.
+  Radiometric consistency across scenes acquired on different dates may
+  require cross-calibration or relative normalization.
+
+  At sub-meter resolution, pixel-based classification methods are generally
+  ineffective. Use object-based image analysis (OBIA) or deep learning
+  (semantic segmentation) approaches instead.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # For spectral depth (SWIR, red edge) and systematic time series
+  - superdove       # Fellow Planet sensor with 8 bands including red edge at ~3m
+  - naip            # For free high-res comparison in CONUS

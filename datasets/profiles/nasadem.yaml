@@ -1,0 +1,157 @@
+id: nasadem
+name: NASADEM (NASA Digital Elevation Model)
+provider: NASA / Jet Propulsion Laboratory (JPL)
+
+spatial:
+  resolution: |
+    ~30m (~1 arc-second) posting globally. This is a Digital Surface Model
+    (DSM), meaning it includes the height of buildings, trees, and other
+    surface objects — not bare earth. The effective horizontal resolution
+    is approximately 30m at the equator, becoming finer (in meters) at
+    higher latitudes due to the geographic coordinate system.
+  coverage: >
+    Global land surfaces from 60 degrees North to 56 degrees South —
+    the coverage limits of the original Shuttle Radar Topography Mission
+    (SRTM). No coverage in polar regions beyond these latitudes. Some
+    residual void areas exist in steep mountainous terrain (Himalayas,
+    Andes), though NASADEM has significantly fewer voids than the
+    original SRTM release thanks to reprocessing with improved
+    void-filling algorithms.
+  coordinate_system: WGS84 / EGM96 geoid (EPSG:4326 horizontal, EGM96 vertical)
+
+temporal:
+  cadence: >
+    Static product — represents a single acquisition period (February
+    11-22, 2000, during the Space Shuttle Endeavour STS-99 mission).
+    No temporal updates. The NASADEM release (2020) is a reprocessing
+    of the original SRTM data, not a new acquisition.
+  archive_start: "2020 (NASADEM release); source data from February 2000 SRTM mission"
+  latency: N/A — static product, no updates planned.
+
+layers:
+  - "DEM (elevation values in meters above EGM96 geoid)"
+  - "NUM (source/quality map indicating data provenance per pixel)"
+  - "NUM_URB (urban mask used during processing)"
+
+formats:
+  native: GeoTIFF (1 degree x 1 degree tiles)
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). Microsoft Planetary Computer serves
+    NASADEM as COGs accessible via STAC API. This is the format used
+    by the Data Engine for on-the-fly loading with odc.stac.
+
+access:
+  method: >
+    Microsoft Planetary Computer STAC API (collection: 'nasadem').
+    This is the primary access method used by the Hum Data Engine.
+    Also available via NASA Earthdata (LP DAAC) for direct tile download.
+  auth: >
+    No authentication required for Planetary Computer access (public
+    STAC API with token signing via planetary_computer.sign_inplace).
+    NASA Earthdata requires free registration for direct download.
+  alternatives: >
+    NASA Earthdata / LP DAAC (https://lpdaac.usgs.gov) for original
+    tile download. AWS Open Data. OpenTopography for download and
+    derivative products. Google Earth Engine (as 'NASA/NASADEM_HGT/001').
+
+strengths: |
+  The Hum Data Engine's primary elevation source. The elevation.py
+  ancillary module loads NASADEM directly from Microsoft Planetary
+  Computer via STAC and computes elevation_median and elevation_range
+  per H3 cell. This makes NASADEM the default elevation dataset for
+  all Data Engine projects.
+
+  Free, open, and globally available (within SRTM coverage limits)
+  with no authentication barriers on Planetary Computer. The STAC
+  access pattern (pystac-client search, odc.stac.load) integrates
+  cleanly into the Data Engine's ancillary data pipeline.
+
+  Well-understood accuracy characteristics after two decades of
+  scientific use. Vertical accuracy is typically 6-9m absolute (LE90)
+  in open terrain. Widely used in hydrology, geomorphology, terrain
+  analysis, and as an ancillary feature in land cover classification.
+
+  NASADEM improves on the original SRTM release with better void
+  filling (using ASTER GDEM and other sources), reduced noise, and
+  improved processing. It is NASA's definitive reprocessing of the
+  SRTM dataset.
+
+  Derivative products (slope, aspect, hillshade, curvature, roughness,
+  topographic position index) are straightforward to compute and widely
+  useful as ancillary layers in land cover classification, habitat
+  modeling, and site suitability analysis.
+
+limitations: |
+  Digital Surface Model, not Digital Terrain Model — in forested areas,
+  the elevation represents canopy top, not ground surface. This can
+  introduce errors of 10-30m in dense forest when bare-earth elevation
+  is needed. For bare-earth DEM in forested areas, lidar-derived
+  products are preferable where available.
+
+  30m posting means it cannot resolve terrain features smaller than
+  roughly 30-60m. Individual buildings affect the DSM but their shapes
+  are not resolved. For detailed urban terrain modeling or fine-scale
+  hydrological routing, higher-resolution DEMs are necessary.
+
+  Source data is from February 2000 — the oldest of the major global
+  DEMs. Does not reflect any terrain changes from the past 25+ years
+  (mining, construction, landslides, reservoir filling, coastal
+  erosion, glacial retreat). For applications sensitive to recent
+  terrain change, Copernicus DEM (2011-2015 source data) is more
+  current.
+
+  Coverage limited to 60N-56S (SRTM orbital coverage). No data in
+  Arctic or Antarctic regions. For high-latitude or polar work,
+  Copernicus DEM (which has global coverage including polar regions)
+  or ArcticDEM should be used instead.
+
+  Lower vertical accuracy than Copernicus DEM. NASADEM's ~6-9m LE90
+  compares unfavorably to Copernicus DEM's ~2-4m LE90, particularly
+  in mountainous terrain where SRTM's C-band radar had more issues
+  with layover and shadow than TanDEM-X's X-band radar.
+
+  Vertical datum is EGM96 geoid (not EGM2008 like Copernicus DEM).
+  For applications requiring ellipsoidal heights or integration with
+  GPS data, a geoid-ellipsoid separation correction is needed.
+
+  Quality is lower over water bodies and in areas with heavy radar
+  shadow or layover (steep mountain slopes, deep valleys).
+
+preprocessing_notes: |
+  The Data Engine handles NASADEM loading automatically through the
+  ElevationAncillaryData class in elevation.py. The workflow is:
+
+  1. Open the Planetary Computer STAC catalog with token signing
+  2. Search the 'nasadem' collection by bounding box
+  3. Load matching tiles via odc.stac.load with dask chunking
+  4. Squeeze the extra dummy dimension from the data array
+  5. Set nodata to -999
+  6. Compute zonal statistics (median, range) per H3 cell
+
+  For standalone use outside the Data Engine, NASADEM tiles can be
+  loaded directly via odc.stac or rioxarray from Planetary Computer.
+
+  When mosaicking tiles, the 1 degree x 1 degree tiling means you
+  will need to merge tiles for most study areas. The odc.stac.load
+  call handles this automatically when multiple STAC items are returned.
+
+  For integration with optical imagery (Sentinel-2, Landsat),
+  reproject to match the imagery CRS (typically UTM) rather than
+  working in geographic coordinates.
+
+  The EGM96 vertical datum means elevation values are approximately
+  "height above mean sea level." Note this differs from Copernicus
+  DEM's EGM2008 datum — if comparing or combining the two, account
+  for the small (~1m in most places) geoid model difference.
+
+  The Data Engine uses H3 resolution 11 by default for elevation
+  (cell area ~2000 m2, ~24.8m spacing), which closely matches the
+  native 30m pixel spacing. When H3 cells are smaller than the
+  default resolution, all_touched=True is used for zonal statistics
+  to ensure every cell gets a value.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # Terrain correction, elevation as classification feature
+  - sentinel-1-rtc  # Terrain-corrected SAR, radiometric terrain flattening
+  - cop-dem         # Alternative/comparison DEM, better accuracy and coverage
+  - esa-worldcover  # Land cover context for elevation analysis

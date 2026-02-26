@@ -1,0 +1,141 @@
+id: superdove
+name: Planet SuperDove (PSB.SD) 8-Band Surface Reflectance
+provider: Planet Labs PBC
+
+spatial:
+  resolution: |
+    All 8 bands at ~3m native GSD (ground sample distance).
+    In Hum's internal STAC catalog, imagery is stored resampled to 1.0m.
+    The native 3m GSD sits between Sentinel-2 (10m) and sub-meter VHR
+    satellites like SkySat or Pleiades.
+  coverage: >
+    Global. The SuperDove constellation comprises 200+ satellites, providing
+    near-daily imaging of the entire land surface. Oceanic and polar coverage
+    is available but less frequent. Tasking is not required — the constellation
+    operates in a continuous mapping mode.
+  coordinate_system: UTM zones / WGS84 (EPSG varies by zone)
+
+temporal:
+  cadence: >
+    Near-daily global revisit. The 200+ satellite constellation enables
+    multiple observations per day at most locations under clear skies.
+    This is the highest-cadence commercial optical constellation available.
+  archive_start: "2020 (SuperDove / PSB.SD generation); earlier Dove data back to 2016"
+  latency: >
+    Imagery is typically available within hours of acquisition through
+    Planet's platform. Availability in Hum's internal STAC catalog depends
+    on ingestion pipeline timing.
+
+bands:
+  - "Coastal Blue (~443nm, 3m) — water column penetration, atmospheric correction"
+  - "Blue (~490nm, 3m) — water body mapping, atmospheric scattering"
+  - "Green I (~531nm, 3m) — narrow green band, vegetation peak reflectance"
+  - "Green (~565nm, 3m) — standard green channel, vegetation mapping"
+  - "Yellow (~610nm, 3m) — vegetation stress, senescence detection"
+  - "Red (~665nm, 3m) — chlorophyll absorption, core NDVI input"
+  - "Red Edge (~705nm, 3m) — vegetation health, chlorophyll content estimation"
+  - "Near-Infrared (~865nm, 3m) — vegetation structure, water boundary delineation"
+
+formats:
+  native: GeoTIFF (8-band analytic surface reflectance product)
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). In Hum's STAC catalog, imagery is
+    served as COGs resampled to 1.0m resolution.
+
+access:
+  method: >
+    Hum's internal STAC FastAPI catalog (collection ID: 'superdove',
+    catalog ID: 'stac-fastapi'). Accessed via the data engine library
+    using CollectionName.SUPERDOVE.
+  auth: >
+    Commercial license through Planet Labs. Access within Hum is via
+    the internal STAC API — no separate Planet API key needed for
+    team members.
+  alternatives: >
+    Planet Explorer (planet.com) for interactive browsing. Planet APIs
+    (Orders API, Subscriptions API) for direct access with a Planet
+    account. Google Earth Engine has some Planet NICFI baselines
+    available for tropical regions.
+
+strengths: |
+  Unmatched temporal revisit for optical imagery. With 200+ satellites
+  imaging the entire globe near-daily, SuperDove enables time series
+  analysis at a cadence no other optical constellation can match. This
+  makes it the go-to dataset for high-frequency change monitoring:
+  construction progress, disaster response, crop phenology tracking,
+  and any application where weekly-or-better observations are critical.
+
+  The 8-band spectral configuration is unusually rich for a 3m-class
+  sensor. The inclusion of coastal blue, yellow, and red edge bands —
+  on top of standard blue, green, red, and NIR — enables advanced
+  spectral indices and analyses typically only available at coarser
+  resolutions (e.g., Sentinel-2 at 10-20m). The yellow band is
+  particularly useful for detecting vegetation stress and senescence,
+  while the red edge band is essential for chlorophyll content
+  estimation and crop health monitoring. The second green band
+  (Green I) provides a narrower spectral window around the vegetation
+  reflectance peak.
+
+  At ~3m, SuperDove resolves individual buildings, road segments,
+  agricultural field boundaries, and land cover transitions at a
+  scale that bridges the gap between Sentinel-2 (where a building
+  is 1-2 pixels) and VHR sensors (sub-meter). This makes it
+  excellent for regional-scale mapping at moderate-high resolution.
+
+limitations: |
+  Commercial data — requires a Planet license. This limits ad-hoc
+  exploratory use and reproducibility in open-science contexts.
+
+  At ~3m native GSD, SuperDove cannot resolve fine-grained features
+  like individual cars, building footprints with precise edges,
+  narrow sidewalks, or small structures. For those applications,
+  SkySat (sub-meter) or aerial imagery (NAIP at 0.6m) is needed.
+
+  Radiometric calibration can vary across the constellation. Because
+  each SuperDove satellite is a small CubeSat with slightly different
+  sensor characteristics, cross-satellite radiometric consistency is
+  not as tight as single-instrument missions like Sentinel-2 or
+  Landsat. Planet applies cross-calibration corrections, but subtle
+  differences may persist and affect sensitive quantitative analysis
+  (e.g., absolute reflectance comparisons across dates acquired by
+  different satellites).
+
+  No SWIR bands — cannot perform mineralogy, burn severity (NBR),
+  or moisture-based indices that require shortwave infrared. For
+  those applications, Sentinel-2 or Landsat is needed.
+
+  No thermal band — cannot measure surface temperature.
+
+  The archive for the 8-band SuperDove (PSB.SD) generation begins
+  around 2020. Earlier Dove satellites had fewer bands and different
+  spectral characteristics.
+
+preprocessing_notes: |
+  Surface reflectance products (PSScene analytic_sr) are already
+  atmospherically corrected, so no additional atmospheric correction
+  is typically needed.
+
+  Cloud masking: Planet provides a Usable Data Mask (UDM2) with
+  per-pixel cloud, shadow, haze, and snow classifications. Always
+  apply UDM2 before analysis. The mask quality is generally good
+  but may miss thin cirrus or haze in some scenes.
+
+  In Hum's internal catalog, imagery is resampled to 1.0m and
+  accessed via CollectionName.SUPERDOVE in the data engine. The
+  band_ids are: ['Coastal Blue', 'Blue', 'Green I', 'Green',
+  'Yellow', 'Red', 'Red Edge', 'Near-Infrared'].
+
+  When building time series, be aware of the cross-satellite
+  radiometric variability. For quantitative analysis, consider
+  normalizing reflectance values or using relative indices rather
+  than absolute reflectance.
+
+  Planet scenes are typically delivered as individual strips or
+  tiles. For large-area analysis, mosaicking is required. Planet
+  provides basemaps (monthly and quarterly composites) that handle
+  this, but they sacrifice temporal precision.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # For SWIR bands, longer archive, and free cross-validation
+  - skysat  # For sub-meter resolution when SuperDove is not detailed enough
+  - naip  # For very high resolution validation in CONUS

@@ -1,0 +1,130 @@
+id: esa-worldcover
+name: ESA WorldCover
+provider: European Space Agency (ESA)
+
+spatial:
+  resolution: |
+    10m global land cover classification. All classes are delivered at the
+    same 10m resolution. This is the highest resolution free global land
+    cover product currently available.
+  coverage: >
+    Global land surfaces (between 90N and 60S for v2021; full global for
+    v2020). Based on Sentinel-1 SAR and Sentinel-2 optical imagery,
+    processed using machine learning classifiers.
+  coordinate_system: WGS84 (EPSG:4326)
+
+temporal:
+  cadence: >
+    Single-epoch product. v1.0 covers the year 2020, v2.0 covers 2021.
+    Not a continuous time series — each version is a snapshot representing
+    one calendar year.
+  archive_start: "2020 (v1.0); 2021 (v2.0)"
+  latency: N/A — static annual releases.
+
+layers:
+  - >
+    map — Land cover classification (uint8). 11 classes:
+      0  = No Data
+      10 = Tree cover
+      20 = Shrubland
+      30 = Grassland
+      40 = Cropland
+      50 = Built-up
+      60 = Bare / sparse vegetation
+      70 = Snow and ice
+      80 = Permanent water bodies
+      90 = Herbaceous wetland
+      95 = Mangroves
+      100 = Moss and lichen
+  - "input_quality.1 — Sentinel-1 observation count per pixel (int16)"
+  - "input_quality.2 — Sentinel-2 observation count per pixel (int16)"
+  - "input_quality.3 — Percentage of invalid Sentinel-2 observations per pixel (int16)"
+
+formats:
+  native: GeoTIFF (3x3 degree tiles)
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). Microsoft Planetary Computer serves
+    the data as COGs via STAC API. Values are categorical integers, so
+    nearest-neighbor resampling must be used for any reprojection.
+
+access:
+  method: >
+    Microsoft Planetary Computer STAC API (collection: esa-worldcover).
+    Also available from the ESA WorldCover viewer at worldcover.vito.be.
+  auth: >
+    Free and open access. No authentication required for Planetary
+    Computer. ESA download requires free Copernicus registration.
+  alternatives: >
+    ESA WorldCover portal (worldcover.vito.be) for direct tile download.
+    Google Earth Engine (as 'ESA/WorldCover/v100' and 'ESA/WorldCover/v200').
+    AWS (via Planetary Computer CDN).
+
+strengths: |
+  The highest resolution free global land cover product available at 10m,
+  making it significantly more detailed than alternatives like GlobCover
+  (300m) or MODIS land cover (500m). Only the IO LULC Annual product
+  (also 10m, derived from ESA WorldCover methodology) offers comparable
+  resolution with annual temporal coverage.
+
+  Derived from both Sentinel-1 (SAR) and Sentinel-2 (optical) data,
+  which means the classification is more robust in persistently cloudy
+  regions where optical-only products struggle. The SAR component helps
+  distinguish water, urban, and forested areas even under cloud cover.
+
+  Extremely useful as a contextual/ancillary layer for other analyses:
+  stratifying sampling designs, masking irrelevant land cover types,
+  providing prior class probabilities for custom classifiers, and
+  generating landscape composition metrics within areas of interest.
+
+  Consistent global methodology means cross-region comparisons are valid,
+  unlike products assembled from heterogeneous regional maps.
+
+limitations: |
+  Classification errors exist, particularly at class boundaries and in
+  transitional landscapes. Confusion between cropland and grassland,
+  and between shrubland and sparse tree cover, is common. The overall
+  reported accuracy is ~75% globally, but varies significantly by region
+  and class.
+
+  Single-epoch product (2020 and 2021 only) — it does not capture
+  temporal land cover change. For change detection or multi-year
+  analysis, the IO LULC Annual product (io-lulc-annual-v02) provides
+  annual maps from 2017 onward using a related methodology.
+
+  The 11-class legend is relatively coarse. It does not distinguish
+  crop types, forest species, or urban density. For applications
+  requiring finer thematic detail, custom classification using the
+  underlying Sentinel imagery is necessary.
+
+  Classification values represent a hard assignment — no class
+  probability or confidence layer is provided with the product. The
+  input quality layers (observation counts) can serve as a rough proxy
+  for reliability.
+
+preprocessing_notes: |
+  Values are categorical integers — use nearest-neighbor resampling for
+  any reprojection or rescaling. Bilinear or cubic interpolation will
+  produce meaningless intermediate values.
+
+  When using as an ancillary layer alongside Sentinel-2 or other
+  imagery, reproject to match the target imagery CRS (typically UTM)
+  rather than working in geographic coordinates.
+
+  The Data Engine accesses ESA WorldCover via the 'esa-worldcover'
+  collection on Microsoft Planetary Computer (CollectionName.ESA_WORLDCOVER).
+  The primary band is 'map' (the classification layer). Three quality
+  bands are also available: s1_observation_count, s2_observation_count,
+  and invalid_s2_percentage.
+
+  Note: The Data Engine ancillary landcover module
+  (hum_ai.data_engine.ancillary.landcover) uses the IO LULC Annual
+  product (io-lulc-annual-v02) rather than ESA WorldCover directly for
+  H3-based zonal summaries. That module defines a LandcoverCategory enum
+  with a different class scheme. ESA WorldCover is accessed directly via
+  the STAC collection for pixel-level use in training data pipelines.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # Source imagery; WorldCover provides land cover context
+  - io-lulc-annual  # Related annual product for temporal land cover analysis
+  - cop-dem         # Elevation context alongside land cover
+  - nasadem         # Alternative elevation source

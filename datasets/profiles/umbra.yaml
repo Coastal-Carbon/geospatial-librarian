@@ -1,0 +1,157 @@
+id: umbra
+name: Umbra SAR (Synthetic Aperture Radar)
+provider: Umbra
+
+spatial:
+  resolution: |
+    ~1m ground sample distance (GSD) in standard imaging modes.
+    Sub-meter resolution (down to 16cm) available in spotlight modes,
+    though most archived imagery in Hum's collection is at ~1m.
+    Single polarization (VV) dominates the archive (>98% of scenes).
+  coverage: >
+    Global coverage via tasking. Umbra operates a constellation of
+    X-band SAR satellites that can image any point on Earth. However,
+    this is a commercial tasking-based sensor — coverage depends on
+    what has been ordered. There is no systematic global archive like
+    Sentinel-1. Hum's STAC catalog contains only the scenes that have
+    been procured for specific projects.
+  coordinate_system: UTM zones / WGS84 (EPSG varies by zone)
+
+temporal:
+  cadence: >
+    Tasking-based — revisit depends on constellation size and tasking
+    priority. The growing Umbra constellation supports sub-daily revisit
+    capability for priority targets, but actual cadence for a given AOI
+    depends entirely on tasking schedules and commercial agreements.
+  archive_start: "2021 (first operational satellite launched December 2021)"
+  latency: >
+    Typically hours to days from acquisition to delivery, depending on
+    the tasking agreement and processing level. Imagery in Hum's STAC
+    catalog is available once ingested by the data team.
+
+bands:
+  - "VV - Vertical-Vertical polarization (X-band, ~9.65 GHz / ~3.1cm wavelength, 1m GSD)"
+
+formats:
+  native: GeoTIFF
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). Imagery in Hum's STAC catalog is
+    served as COG for efficient cloud-based access.
+
+access:
+  method: >
+    Hum's internal STAC FastAPI — collection ID "umbra". Accessed
+    programmatically via the data engine's catalog search utilities
+    using CollectionName.UMBRA.
+  auth: >
+    Commercial license. Access is limited to Hum's internal STAC
+    infrastructure. Requires authentication credentials for the
+    stac-fastapi catalog.
+  alternatives: >
+    Umbra sells data directly through its own platform (umbra.space).
+    Some open data samples are available through Umbra's Open Data
+    Program. AWS Marketplace also offers Umbra data.
+
+strengths: |
+  Among the highest-resolution commercially available SAR imagery. While
+  the standard archive resolution is ~1m, Umbra's spotlight modes can
+  achieve sub-meter resolution down to 16cm — this is exceptional for SAR
+  and enables detection of very small features such as individual vehicles,
+  small vessels, and fine structural details on buildings and infrastructure.
+
+  As SAR, Umbra imagery penetrates clouds and works equally well day or
+  night. This makes it invaluable for monitoring areas with persistent
+  cloud cover (tropics, maritime climates) where optical sensors like
+  Sentinel-2 or Pleiades frequently fail to acquire usable imagery.
+
+  The X-band wavelength (~3.1cm) is particularly sensitive to small-scale
+  surface roughness and built structures, making it excellent for:
+  - Infrastructure monitoring and change detection (new construction,
+    damage assessment, structural deformation)
+  - Maritime domain awareness (vessel detection, port activity monitoring)
+  - Detailed urban mapping at a scale comparable to optical VHR sensors
+
+  The very high resolution enables SAR-based change detection workflows
+  that can identify subtle changes — new structures, ground disturbance,
+  vehicle presence/absence — that would be invisible to the 10m resolution
+  of Sentinel-1.
+
+  In Hum's data engine, Umbra is registered as CollectionName.UMBRA with
+  a single VV band (ObservationType.UMBRA_VV) at 1m resolution, making it
+  straightforward to integrate into multi-source analysis pipelines
+  alongside other commercial and open datasets.
+
+limitations: |
+  Commercial and expensive. Unlike Sentinel-1, Umbra data is not free or
+  open — every scene in the archive was purchased. This limits the volume
+  of data available and makes large-area systematic monitoring cost-
+  prohibitive compared to free SAR alternatives.
+
+  Single polarization only (VV). The archive is overwhelmingly VV-polarized
+  (>98% of scenes). This limits the types of analysis possible compared to
+  dual-pol (VV+VH) sensors like Sentinel-1. Specifically, you cannot
+  compute cross-pol ratios (VV/VH) which are valuable for vegetation
+  characterization, wetland mapping, and certain land cover classification
+  approaches. The SOURCE_INFO definition includes HH, VH, and HV band IDs,
+  but in practice these polarizations are rarely available.
+
+  SAR data requires specialized expertise to interpret and process. Unlike
+  optical imagery, SAR backscatter values are not intuitive — bright pixels
+  mean high radar return (metal, corner reflectors, steep slopes facing the
+  sensor), dark pixels mean smooth surfaces or radar shadow. Analysts
+  unfamiliar with SAR will face a steep learning curve.
+
+  Inherent SAR artifacts: speckle noise, layover (tall structures leaning
+  toward the sensor), foreshortening (slopes compressed), and radar shadow
+  (areas behind tall objects or steep terrain that receive no signal). These
+  artifacts are more pronounced at higher resolution and in urban/mountainous
+  terrain — precisely the areas where Umbra's high resolution is most
+  valuable.
+
+  No systematic global archive. Coverage is spotty and project-driven.
+  You cannot assume imagery exists for an arbitrary location and time
+  period the way you can with Sentinel-1 or Sentinel-2.
+
+  X-band has limited penetration into vegetation canopy compared to
+  C-band (Sentinel-1) or L-band (ALOS PALSAR). For applications requiring
+  canopy penetration (biomass estimation, under-canopy mapping), longer
+  wavelength SAR is more appropriate.
+
+preprocessing_notes: |
+  SAR data requires different preprocessing than optical imagery. Key
+  considerations:
+
+  Speckle filtering: Raw SAR imagery contains multiplicative speckle
+  noise. Apply a speckle filter (Lee, Frost, or Gamma MAP) before
+  visual interpretation or pixel-based analysis. For deep learning
+  workflows, some teams prefer to work with unfiltered data and let
+  the model learn to handle speckle.
+
+  Radiometric calibration: Ensure the data is calibrated to sigma-nought
+  (backscatter coefficient) if you need physically meaningful values for
+  comparison across dates or with other SAR sensors. Check the STAC item
+  metadata for the processing level of each scene.
+
+  Geometric terrain correction: In areas with significant topography,
+  apply Range-Doppler terrain correction using a DEM (cop-dem is a good
+  choice) to reduce geometric distortions from layover and foreshortening.
+
+  Coordinate alignment: When combining Umbra with other datasets (e.g.,
+  Sentinel-2 optical, Sentinel-1 SAR), verify spatial alignment carefully.
+  Commercial SAR geolocation accuracy is generally good but may require
+  fine co-registration for pixel-level fusion.
+
+  Log-scale conversion: SAR backscatter values span several orders of
+  magnitude. Converting to dB scale (10 * log10(value)) compresses the
+  dynamic range and makes the imagery easier to visualize and analyze.
+
+  In the data engine, Umbra data is accessed via CollectionName.UMBRA
+  through the stac-fastapi catalog. The default band mapping uses only
+  band index 0 (VV polarization), mapped to ObservationType.UMBRA_VV.
+  Resolution defaults to 1.0m as defined in SOURCE_INFO.
+
+commonly_paired_with:
+  - sentinel-1-rtc  # Free SAR for broader temporal/spatial coverage
+  - capella  # Another commercial high-res SAR for cross-validation
+  - sentinel-2-l2a  # Optical complement for SAR-optical fusion
+  - cop-dem  # For terrain correction of SAR imagery

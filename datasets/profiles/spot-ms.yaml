@@ -1,0 +1,150 @@
+id: spot-ms
+name: SPOT Multispectral Imagery
+provider: Airbus Defence and Space
+
+spatial:
+  resolution: |
+    6m: B0 (Blue), B1 (Green), B2 (Red), B3 (NIR) — multispectral
+    1.5m: Panchromatic band (single broadband visible)
+    Pan-sharpened products available at 1.5m using MS+PAN fusion.
+  coverage: >
+    Global coverage through a combination of deep archive imagery and
+    on-demand tasking. The SPOT program has been acquiring imagery since
+    1986 (SPOT-1), with the current generation (SPOT-6/7) operating since
+    2012/2014. Archive density is highest over Europe, North Africa, and
+    populated regions worldwide. Tasking is available for any land area.
+  coordinate_system: UTM / WGS84 (EPSG varies by zone)
+
+temporal:
+  cadence: >
+    SPOT-6 and SPOT-7 together provide a 1-day revisit capability at
+    off-nadir angles (up to 30 degrees). Nadir revisit is approximately
+    26 days per satellite. In practice, archive availability for any
+    given location depends on tasking history — not every location has
+    frequent repeat coverage like free satellites provide.
+  archive_start: "1986 (SPOT-1, 10-20m); 2012 (SPOT-6, 6m/1.5m); 2014 (SPOT-7, 6m/1.5m)"
+  latency: >
+    Archive imagery available within hours of order. New tasking requests
+    typically fulfilled within days to weeks depending on priority level,
+    cloud conditions, and satellite scheduling.
+
+bands:
+  - "B0 - Blue (485nm, 6m)"
+  - "B1 - Green (565nm, 6m)"
+  - "B2 - Red (655nm, 6m)"
+  - "B3 - NIR (825nm, 6m)"
+  - "PAN - Panchromatic (450-745nm, 1.5m)"
+
+formats:
+  native: >
+    GeoTIFF or DIMAP (Airbus native format). Delivered as orthorectified
+    tiles or strip segments depending on product level ordered.
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). In Hum's internal catalog, SPOT-MS
+    data is stored as COG and indexed via STAC.
+
+access:
+  method: >
+    Hum's internal STAC FastAPI catalog (collection: spot-ms). Search and
+    access through the data-engine library using CollectionName.SPOT_MS.
+  auth: >
+    Commercial license. Data is procured by Hum from Airbus Defence and Space
+    and hosted internally. Access requires Hum platform credentials and
+    appropriate project authorization.
+  alternatives: >
+    Airbus OneAtlas (commercial portal for direct procurement). Airbus
+    Intelligence Data Services API. Some archive imagery available through
+    resellers and government programs (e.g., ESA Third Party Missions).
+
+strengths: |
+  Long heritage and deep archive. The SPOT program has been continuously
+  acquiring imagery since 1986 — one of the longest-running commercial
+  Earth observation programs. This provides an unmatched archive for
+  historical change analysis spanning nearly four decades, which no free
+  satellite (Landsat aside) can match at this resolution class.
+
+  The 6m multispectral resolution bridges a useful gap between Sentinel-2
+  (10m, free) and very-high-resolution commercial satellites like Pleiades
+  (2m) or WorldView (1.2-1.8m). At 6m, you can distinguish individual
+  buildings, road segments, field boundaries, and land-use parcels with
+  more confidence than Sentinel-2, while the data volume and cost remain
+  lower than sub-meter imagery.
+
+  The panchromatic band at 1.5m provides a significant resolution boost
+  for visual interpretation and pan-sharpening workflows. Pan-sharpened
+  SPOT products at 1.5m approach VHR capability at a lower price point.
+
+  Four-band multispectral (Blue, Green, Red, NIR) supports standard
+  vegetation indices (NDVI), water detection (NDWI), and basic land
+  cover classification — the core remote sensing workflows.
+
+  As a reliable commercial option from Airbus, SPOT imagery comes with
+  consistent quality, professional support, and well-documented metadata.
+  It is a solid workhorse for projects that need better-than-Sentinel-2
+  resolution without the cost of sub-meter imagery.
+
+limitations: |
+  Commercial data — requires procurement from Airbus or access through
+  Hum's licensed archive. Not free or open, which limits ad-hoc
+  exploration and restricts sharing of derived products depending on
+  license terms.
+
+  Only 4 multispectral bands (Blue, Green, Red, NIR). No red edge bands,
+  no SWIR, no thermal. This limits spectral analysis compared to
+  Sentinel-2 (13 bands) or Landsat (11 bands). You cannot compute
+  advanced vegetation indices (NDRE), moisture indices (NDMI/NDWI using
+  SWIR), or burn severity indices (NBR) from SPOT-MS alone.
+
+  At 6m, the multispectral imagery is not sub-meter. You can see
+  buildings as shapes but cannot resolve fine details like individual
+  cars, sidewalks, driveways, or small structures. For tasks requiring
+  sub-meter detail, Pleiades, WorldView, or SkySat are better choices.
+
+  Archive coverage is tasking-driven, not systematic. Unlike Sentinel-2
+  or Landsat which image the entire globe on a fixed schedule, SPOT
+  archive density varies greatly by location. Popular areas (cities,
+  agriculture regions, conflict zones) have dense archives; remote or
+  low-interest areas may have sparse or no coverage.
+
+  SPOT-6/7 are being superseded by newer constellations. Airbus now
+  operates Pleiades Neo (30cm) and promotes it as the next-generation
+  product. SPOT-6/7 will eventually reach end of life, and future
+  archive growth will slow.
+
+  Radiometric consistency across the 40-year archive requires care.
+  SPOT-1 through SPOT-5 had different sensors, resolutions (10-20m),
+  and calibration characteristics than SPOT-6/7. Cross-generation
+  comparison requires careful normalization.
+
+preprocessing_notes: |
+  SPOT data from Hum's catalog is orthorectified and stored as COG in
+  the STAC collection. Band IDs in the data engine are B0 (Blue), B1
+  (Green), B2 (Red), B3 (NIR), with values stored as uint16.
+
+  The missing_value is 0 — mask out zero-valued pixels before analysis
+  to avoid including nodata areas in statistics or classifications.
+
+  If pan-sharpening is needed, the panchromatic band must be ordered
+  separately or as part of a bundle product from Airbus. Pan-sharpening
+  algorithms (Brovey, Gram-Schmidt, etc.) are available in most
+  geospatial toolkits (GDAL, rasterio, orfeo-toolbox).
+
+  For cross-sensor workflows (e.g., fusing with Sentinel-2), resample
+  SPOT 6m to 10m or Sentinel-2 10m to 6m depending on which resolution
+  you want to work at. Use bilinear or cubic resampling for continuous
+  reflectance data.
+
+  Reflectance values may need radiometric normalization if comparing
+  across dates or with other sensors. SPOT-6/7 products can be delivered
+  as top-of-atmosphere (TOA) reflectance, but surface reflectance
+  correction may require additional processing if not included in the
+  product level ordered.
+
+  When searching via the data engine, use CollectionName.SPOT_MS with
+  the standard STAC search interface. Band order in SOURCE_INFO is
+  Blue, Green, Red, NIR (indices 0-3).
+
+commonly_paired_with:
+  - sentinel-2-l2a  # For spectral depth (red edge, SWIR) and free time series
+  - pleiades  # For sub-meter detail from the same Airbus ecosystem
+  - naip  # For free high-resolution comparison over US sites

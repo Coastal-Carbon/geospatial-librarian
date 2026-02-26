@@ -1,0 +1,134 @@
+id: udel-weather-normals
+name: University of Delaware Monthly Climate Normals (v4.01)
+provider: University of Delaware / NOAA Physical Sciences Laboratory
+
+spatial:
+  resolution: |
+    0.5 degree (~55km at the equator) regular latitude-longitude grid.
+    All variables are delivered on the same grid. This is a relatively
+    coarse resolution suitable for broad regional climate context, not
+    for resolving local microclimates or topographic climate effects.
+  coverage: >
+    Global land surfaces. The gridded product covers all terrestrial
+    areas but does not include ocean grid cells. Based on station
+    observations interpolated to a regular grid using climatologically
+    aided interpolation (CAI).
+  coordinate_system: WGS84 (EPSG:4326)
+
+temporal:
+  cadence: >
+    Static product — long-term monthly means (normals) representing
+    the 30-year period 1981-2010. Each of the 12 months has a single
+    climatological average value. No interannual time series.
+  archive_start: "1981-2010 climatological period (v4.01 release)"
+  latency: N/A — static climatological product.
+
+layers:
+  - "air_1 through air_12 — Monthly mean air temperature (degrees Celsius) for January through December"
+  - "precip_1 through precip_12 — Monthly mean precipitation (cm/month) for January through December"
+
+formats:
+  native: NetCDF (two files — air.mon.1981-2010.ltm.v401.nc and precip.mon.1981-2010.ltm.v401.nc)
+  common_conversions: >
+    Loaded with xarray (engine='scipy') from NetCDF. The Data Engine
+    reads these files from S3, converts to pandas DataFrames, and
+    samples values at H3 cell centroids using nearest-neighbor lookup
+    via scipy cKDTree. No format conversion is typically needed since
+    the data is consumed programmatically.
+
+access:
+  method: >
+    S3 bucket cc-dataocean/weather/udel/ (private bucket, requires
+    Hum AWS credentials). The Data Engine's WeatherAncillaryData class
+    handles access transparently.
+  auth: >
+    Hum AWS credentials for S3 access. The original public data is
+    freely available from NOAA PSL without authentication.
+  alternatives: >
+    NOAA Physical Sciences Laboratory
+    (https://psl.noaa.gov/data/gridded/data.UDel_AirT_Precip.html)
+    for direct download. Also available through NOAA's THREDDS/OPeNDAP
+    servers for programmatic access.
+
+strengths: |
+  Provides global climate context at monthly resolution. The 30-year
+  long-term means (1981-2010) smooth out interannual variability,
+  giving a stable characterization of "typical" climate conditions at
+  any terrestrial location. This makes the data well-suited for
+  applications where the climate baseline matters more than any
+  single year's weather.
+
+  Extremely useful as ancillary features for ecological niche modeling,
+  species distribution models, agricultural suitability analysis, and
+  carbon flux estimation. Monthly temperature and precipitation
+  together capture the fundamental dimensions of climate that drive
+  biological and agricultural systems.
+
+  The 24 output variables (12 months x 2 variables) provide a compact
+  but informative climate fingerprint for any location, enabling
+  seasonal pattern analysis without requiring time series processing.
+
+  Already integrated into the Data Engine as WeatherAncillaryData
+  (hum_ai.data_engine.ancillary.weather), which handles S3 access,
+  nearest-neighbor spatial lookup, and H3 cell assignment automatically.
+  Default H3 resolution is 3 (~59.7 km spacing), which is well-matched
+  to the 0.5-degree grid spacing.
+
+limitations: |
+  Resolution of ~55km is very coarse. Local climate variation driven
+  by topography (rain shadows, elevation gradients, coastal effects)
+  is not resolved. A mountain range and its adjacent valley will
+  receive the same climate values. For applications requiring
+  fine-scale climate data, consider WorldClim (~1km) or PRISM (800m,
+  CONUS only).
+
+  The 30-year normals (1981-2010) do not capture recent climate
+  trends. Regions experiencing rapid warming or shifting precipitation
+  patterns since 2010 will not be accurately represented by these
+  normals. The climatological period is now over a decade old.
+
+  No interannual variability information — only the long-term mean
+  for each month is provided. This means you cannot assess drought
+  years, extreme precipitation events, or year-to-year climate
+  fluctuations from this dataset alone.
+
+  Precipitation units in the source data are cm/month (the Data Engine
+  METADATA documents this). Verify unit expectations in downstream
+  models, as many expect mm/month or mm/day.
+
+  Interpolation from station observations means data quality varies
+  geographically. Areas with sparse weather station networks (e.g.,
+  central Africa, Amazon interior, polar regions) will have higher
+  interpolation uncertainty.
+
+preprocessing_notes: |
+  The Data Engine's WeatherAncillaryData class
+  (hum_ai.data_engine.ancillary.weather) handles all preprocessing:
+
+  1. Reads NetCDF files from S3 (cc-dataocean/weather/udel/) using
+     boto3 + xarray with the scipy engine.
+  2. Converts the 'time' dimension to month integers (1-12).
+  3. Merges temperature and precipitation DataFrames on lat/lon/month.
+  4. Shifts longitude from 0-360 to -180/+180 convention.
+  5. Builds a scipy cKDTree from the weather grid coordinates.
+  6. For each H3 cell centroid, finds the nearest weather grid point
+     and assigns all 24 monthly values (air_1..air_12, precip_1..precip_12).
+
+  The default H3 resolution is 3 (METADATA['default_h3_resolution']).
+  At this resolution, H3 cells have ~59.7 km spacing, which is
+  well-matched to the 0.5-degree (~55 km) weather grid. Using finer
+  H3 resolutions will not add climate information — many H3 cells
+  will map to the same weather grid point.
+
+  No zonal summary is used (unlike raster-based ancillary data)
+  because the weather grid cells are larger than typical H3 analysis
+  cells. Point sampling (nearest neighbor) is appropriate.
+
+  Output columns follow the convention: cell, air_1, air_2, ...,
+  air_12, precip_1, precip_2, ..., precip_12.
+
+commonly_paired_with:
+  - hwsd2-soils        # Soil properties + climate = agricultural/ecological context
+  - gpw-population     # Population density with climate context
+  - nasadem            # Elevation explains climate variation within coarse grid cells
+  - esa-worldcover     # Land cover classification with climate context

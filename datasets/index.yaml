@@ -82,3 +82,227 @@ datasets:
       drainage, viewshed, flood modeling, terrain classification.
       Static product (~2011-2015 acquisitions). Commonly used as
       ancillary input to land cover classification and habitat modeling.
+
+  # --- Satellite SAR ---
+
+  - id: sentinel-1-rtc
+    name: Sentinel-1 Radiometric Terrain Corrected SAR
+    type: raster
+    modality: SAR
+    resolution: "10m"
+    coverage: global land surfaces
+    key_traits: |
+      C-band SAR with VH and VV polarization at 10m resolution.
+      Cloud-penetrating and day/night capable — acquires data regardless
+      of weather or illumination. Sensitive to surface roughness, soil
+      moisture, and structural properties. Dual-polarization enables
+      decomposition of scattering mechanisms. 6-day effective revisit.
+      Free and open access via Copernicus. Already terrain-corrected (RTC).
+
+  - id: capella
+    name: Capella Space X-band SAR
+    type: raster
+    modality: SAR
+    resolution: "1m"
+    coverage: global (tasking-based, commercial)
+    key_traits: |
+      Very high resolution X-band SAR at ~1m. Cloud-penetrating, day/night
+      operation. Predominantly HH polarization. Rapid tasking capability
+      for time-sensitive monitoring. Resolves individual structures and
+      infrastructure at sub-building scale. Commercial license required.
+
+  - id: umbra
+    name: Umbra X-band SAR
+    type: raster
+    modality: SAR
+    resolution: "1m"
+    coverage: global (tasking-based, commercial)
+    key_traits: |
+      Among the highest resolution commercial SAR available, sub-meter
+      capable. X-band, predominantly VV polarization. Cloud-penetrating,
+      day/night operation. Excellent for detailed change detection and
+      infrastructure monitoring at very high spatial resolution.
+      Commercial license required.
+
+  # --- Commercial VHR Optical ---
+
+  - id: pleiades
+    name: Pleiades Neo Multispectral Imagery
+    type: raster
+    modality: optical-multispectral
+    resolution: "1m (multispectral)"
+    coverage: global (tasking/archive, commercial)
+    key_traits: |
+      Sub-meter commercial optical imagery with 6 spectral bands including
+      coastal blue and vegetation red edge — more spectral capability than
+      most VHR satellites. 1m multispectral resolution resolves individual
+      buildings, vehicles, and fine infrastructure. Red edge band enables
+      vegetation analysis at very high resolution. Commercial license required.
+
+  - id: skysat
+    name: Planet SkySat Multispectral Imagery
+    type: raster
+    modality: optical-rgb-nir
+    resolution: "1m"
+    coverage: global (tasking/archive, commercial)
+    key_traits: |
+      Sub-meter RGB+NIR from a 21-satellite constellation enabling high
+      revisit when tasked. Resolves individual vehicles, building details,
+      and fine infrastructure. NIR band enables NDVI at very high resolution.
+      Video capture capability for dynamic scene monitoring. Commercial
+      license required.
+
+  - id: superdove
+    name: Planet SuperDove (PlanetScope)
+    type: raster
+    modality: optical-multispectral
+    resolution: "~3m"
+    coverage: global, daily revisit
+    key_traits: |
+      Daily global coverage from the largest Earth-imaging constellation
+      (200+ satellites). 8 spectral bands including coastal blue, yellow,
+      and red edge — enabling advanced vegetation indices at ~3m resolution.
+      Unmatched temporal frequency for change monitoring and time series
+      analysis. Commercial license required.
+
+  - id: spot-ms
+    name: SPOT Multispectral Imagery
+    type: raster
+    modality: optical-multispectral
+    resolution: "6m (multispectral), 1.5m (panchromatic)"
+    coverage: global (archive/tasking, commercial)
+    key_traits: |
+      Medium-high resolution commercial optical with 4 multispectral bands
+      at 6m and panchromatic at 1.5m. Long heritage (SPOT program since
+      1986) provides deep archive for historical analysis. Bridges the
+      resolution gap between Sentinel-2 (10m) and sub-meter VHR satellites.
+      Commercial license required.
+
+  - id: worldview
+    name: Maxar WorldView Multispectral Imagery
+    type: raster
+    modality: optical-multispectral
+    resolution: "~2m (multispectral), ~0.5m (panchromatic)"
+    coverage: global (largest commercial VHR archive)
+    key_traits: |
+      Industry gold standard for very high resolution commercial EO. 8
+      spectral bands at ~2m including unique yellow band and dual NIR bands.
+      ~0.5m panchromatic resolves individual vehicles, building details,
+      and fine infrastructure. Stereo and 3D DEM generation capable. Largest
+      commercial archive. Commercial license required.
+
+  - id: wyvern
+    name: Wyvern Hyperspectral Imagery
+    type: raster
+    modality: hyperspectral
+    resolution: "5.3m"
+    coverage: global (tasking-based, commercial)
+    key_traits: |
+      23 contiguous spectral bands spanning 503-799nm at ~13nm spectral
+      resolution. The only hyperspectral dataset in this catalog. Enables
+      fine spectral discrimination impossible with broadband sensors:
+      mineral identification, vegetation species differentiation, water
+      quality parameters, soil composition analysis. Commercial license
+      required. Relatively new constellation with limited archive.
+
+  # --- Land Cover / Classification ---
+
+  - id: esa-worldcover
+    name: ESA WorldCover
+    type: raster
+    modality: land-cover-classification
+    resolution: "10m"
+    coverage: global land surfaces
+    key_traits: |
+      Highest resolution free global land cover map. 11 classes including
+      trees, crops, built area, water, bare ground, and more. Derived from
+      both Sentinel-1 (SAR) and Sentinel-2 (optical) for cloud-robust
+      classification. Single-epoch product (2020/2021). Useful as
+      contextual/ancillary layer for stratification, masking, and
+      training label generation. Free and open access.
+
+  - id: io-lulc-annual
+    name: Impact Observatory LULC Annual
+    type: raster
+    modality: land-cover-classification
+    resolution: "10m"
+    coverage: global land surfaces
+    key_traits: |
+      Annual global land cover maps at 10m resolution from 2017-2023.
+      Same 9-class scheme as ESA WorldCover but with a temporal dimension,
+      enabling year-over-year land use change detection. Derived from
+      Sentinel-2 imagery. Useful for tracking urbanization, deforestation,
+      agricultural expansion over time. Free and open access.
+
+  # --- Elevation ---
+
+  - id: nasadem
+    name: NASADEM (Reprocessed SRTM)
+    type: raster
+    modality: elevation
+    resolution: "30m"
+    coverage: global (60N to 56S)
+    key_traits: |
+      Reprocessed SRTM elevation product with improved void-filling and
+      accuracy. ~30m resolution Digital Surface Model. Free and open access
+      via Planetary Computer STAC API. The Data Engine's primary elevation
+      source for ancillary terrain context. Older source data than Copernicus
+      DEM (2000 vs 2011-2015) but well-understood and widely used. No
+      coverage at high latitudes (60N-56S only).
+
+  # --- Ancillary / Contextual ---
+
+  - id: hwsd2-soils
+    name: Harmonized World Soil Database v2
+    type: raster
+    modality: soil-properties
+    resolution: "~1km (30 arc-seconds)"
+    coverage: global land surfaces
+    key_traits: |
+      Global soil physical and chemical properties including sand content,
+      clay content, organic carbon, and total nitrogen. Classified raster
+      with lookup table providing 48+ soil attributes per mapping unit.
+      Essential ancillary layer for carbon modeling, agriculture, ecology,
+      and hydrology. ~1km resolution captures regional soil patterns but
+      not field-scale variability. Static product.
+
+  - id: gpw-population
+    name: Gridded Population of the World v4
+    type: raster
+    modality: demographic-census
+    resolution: "~1km (30 arc-seconds)"
+    coverage: global
+    key_traits: |
+      Global gridded population density (persons per km²) at ~1km
+      resolution. Available every 5 years from 2000-2020. Useful as
+      contextual layer for urbanization analysis, environmental impact
+      assessment, infrastructure planning, and exposure modeling.
+      Consistent methodology enables temporal comparison across decades.
+
+  - id: udel-weather-normals
+    name: University of Delaware Monthly Climate Normals
+    type: raster
+    modality: weather-climate
+    resolution: "~55km (0.5 degrees)"
+    coverage: global land surfaces
+    key_traits: |
+      Global monthly temperature and precipitation long-term means
+      (1981-2010). 12 monthly values each for air temperature (°C) and
+      precipitation (cm). Coarse resolution (~55km) but provides essential
+      climate context for ecological niche modeling, agricultural
+      suitability, and carbon flux estimation. Static climatological
+      normals — not a forecast or real-time product.
+
+  - id: modis-nbar-vegetation
+    name: MODIS NBAR Vegetation Indices (MCD43A4)
+    type: raster
+    modality: optical-multispectral
+    resolution: "500m"
+    coverage: global land surfaces
+    key_traits: |
+      BRDF-corrected daily reflectance at 500m enabling directionally
+      consistent NDVI time series from 2001 to present. Percentile
+      statistics (min, p10, p50, p90, max) capture vegetation phenology
+      and productivity patterns over time. Useful as ancillary layer for
+      ecological characterization, agricultural productivity assessment,
+      and seasonal vegetation dynamics. Free and open access.

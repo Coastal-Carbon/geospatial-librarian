@@ -1,0 +1,148 @@
+id: modis-nbar-vegetation
+name: MODIS MCD43A4 NBAR Vegetation Indices
+provider: NASA / USGS
+
+spatial:
+  resolution: |
+    500m global BRDF-adjusted reflectance. All spectral bands are delivered
+    at 500m resolution. The sinusoidal native projection means that pixel
+    spacing varies with latitude when reprojected to geographic or UTM
+    coordinates, but the nominal ground resolution remains 500m.
+  coverage: >
+    Global land surfaces. The MCD43A4 product combines observations from
+    both Terra and Aqua MODIS instruments, providing coverage across all
+    land areas. Polar regions and persistent cloud-covered areas may have
+    reduced data availability.
+  coordinate_system: Sinusoidal (native); typically reprojected to WGS84 (EPSG:4326) for analysis
+
+temporal:
+  cadence: >
+    Daily product (one composite per day), derived from a 16-day rolling
+    window of BRDF model inversions. Each daily product uses observations
+    from the surrounding 16-day window, weighted toward the target date.
+    This means daily temporal resolution but not truly independent daily
+    observations.
+  archive_start: "2000-02-24 (Terra) / 2002-07 (Terra+Aqua combined MCD product)"
+  latency: >
+    Approximately 15-30 days for the standard product. Near-real-time
+    (NRT) forward-processing versions are available with reduced latency
+    but lower quality BRDF corrections.
+
+bands:
+  - "Nadir_Reflectance_Band1 (Red, 620-670nm) — used for NDVI computation"
+  - "Nadir_Reflectance_Band2 (NIR, 841-876nm) — used for NDVI computation"
+  - "Nadir_Reflectance_Band3 (Blue, 459-479nm)"
+  - "Nadir_Reflectance_Band4 (Green, 545-565nm)"
+  - "Nadir_Reflectance_Band5 (NIR, 1230-1250nm)"
+  - "Nadir_Reflectance_Band6 (SWIR, 1628-1652nm)"
+  - "Nadir_Reflectance_Band7 (SWIR, 2105-2155nm)"
+
+formats:
+  native: HDF-EOS2 (sinusoidal grid tiles, 10x10 degree)
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). Microsoft Planetary Computer serves
+    the data as COGs via STAC API (collection: modis-43A4-061), already
+    reprojected from sinusoidal to EPSG:4326. This is the access method
+    used by the Data Engine.
+
+access:
+  method: >
+    Microsoft Planetary Computer STAC API (collection: modis-43A4-061).
+    Also available from NASA LP DAAC (AppEEARS, EarthData Search) for
+    direct HDF tile download.
+  auth: >
+    Free and open access. No authentication required for Planetary
+    Computer STAC API. NASA EarthData login (free) required for LP DAAC.
+  alternatives: >
+    NASA LP DAAC via EarthData Search or AppEEARS for tile-based download.
+    Google Earth Engine (as 'MODIS/061/MCD43A4') for cloud-based analysis.
+    AWS (via USGS on AWS) for direct S3 access to HDF files.
+
+strengths: |
+  Long, continuous time series from 2000/2001 to present, providing over
+  two decades of globally consistent vegetation observations. This
+  temporal depth is unmatched by Sentinel-2 (2015+) or Landsat alone for
+  generating phenological baselines and long-term trend analysis.
+
+  BRDF-corrected (Nadir-adjusted) reflectance means that directional
+  effects from varying sun-sensor geometry are removed. This produces
+  more consistent reflectance values across dates and locations compared
+  to raw top-of-atmosphere or even standard surface reflectance products,
+  making time series analysis more reliable.
+
+  The Data Engine computes NDVI percentile statistics (min, p10, p50,
+  p90, max) per H3 cell over monthly windows. These percentiles capture
+  the full distribution of vegetation condition within a cell over time:
+  p50 reflects typical greenness, min/max capture extremes, and the
+  p10-p90 range characterizes seasonal variability. This is valuable for
+  distinguishing land cover types, detecting anomalies, and providing
+  contextual vegetation phenology layers.
+
+  Daily temporal resolution (from 16-day rolling BRDF model) allows
+  monthly or seasonal compositing with enough observations to compute
+  meaningful statistics even in partly cloudy conditions.
+
+  Global coverage means no geographic gaps — suitable for any study area
+  without needing to mosaic data from different programs or sensors.
+
+limitations: |
+  500m spatial resolution is coarse by modern standards. Individual
+  fields, small forest patches, and fine-scale land cover patterns are
+  not resolved. Not suitable for field-level agricultural monitoring,
+  urban vegetation mapping, or any application requiring sub-hectare
+  spatial detail. For high-resolution vegetation indices, use Sentinel-2
+  (10m) or Landsat (30m).
+
+  Daily composites may still contain cloud-contaminated pixels,
+  especially in persistently cloudy tropical and monsoon regions. The
+  16-day BRDF retrieval window helps, but extended cloud cover can
+  degrade quality or produce fill values.
+
+  NDVI from MODIS is not directly comparable to NDVI from Sentinel-2
+  or Landsat due to differences in band spectral response functions.
+  Cross-sensor harmonization is needed for consistent multi-sensor
+  vegetation time series.
+
+  The sinusoidal native projection and 10x10 degree tiling can be
+  awkward to work with directly. The Planetary Computer COGs mitigate
+  this by serving reprojected data, but users accessing LP DAAC tiles
+  will need to handle reprojection and mosaicking.
+
+  The 16-day rolling window means that rapid vegetation changes (e.g.,
+  fire, harvest) may be temporally smoothed in the BRDF correction.
+
+preprocessing_notes: |
+  The Data Engine accesses MODIS MCD43A4 via the 'modis-43A4-061'
+  collection on Microsoft Planetary Computer using pystac_client and
+  odc.stac for lazy loading (Dask-backed xarray).
+
+  The ancillary indices module (hum_ai.data_engine.ancillary.indices)
+  loads Band 1 (Red) and Band 2 (NIR), computes NDVI as
+  (NIR - Red) / (NIR + Red), and then calculates zonal statistics
+  (min, p10, p50, p90, max) per H3 cell using the summarize_numerical
+  function. Results are grouped by cell and averaged across time slices
+  within each monthly window.
+
+  STAC search for MODIS returns more items than expected for narrow
+  date ranges (up to 16 items for a single day query due to the rolling
+  window design). The Data Engine applies post-search filtering to
+  ensure only items within the requested time range are processed.
+
+  Default H3 resolution is 8 (approximately 0.74 km^2 per cell), which
+  yields roughly 3 MODIS pixels per cell. For finer H3 resolutions
+  (smaller cells relative to 500m pixels), all_touched=True is used in
+  the rasterization to ensure every cell gets a value.
+
+  NDVI output is written with a nodata value of -999. Division by zero
+  (e.g., over water or bare surfaces where both red and NIR are near
+  zero) is handled by masking where the denominator equals zero.
+
+  Results are stored in the 'modis_indices' database table with columns:
+  cell, start_time, end_time, ndvi_min, ndvi_p10, ndvi_p50, ndvi_p90,
+  ndvi_max.
+
+commonly_paired_with:
+  - sentinel-2-l2a   # Higher-resolution vegetation analysis, cross-validated with MODIS phenology
+  - esa-worldcover   # Land cover context for interpreting vegetation index patterns
+  - nasadem          # Elevation context for terrain-vegetation relationships
+  - cop-dem          # Alternative elevation source

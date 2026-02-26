@@ -1,0 +1,162 @@
+id: sentinel-1-rtc
+name: Sentinel-1 Radiometric Terrain Corrected (RTC) SAR Backscatter
+provider: European Space Agency (ESA) / Copernicus Programme
+
+spatial:
+  resolution: |
+    10m: VV (co-polarization) and VH (cross-polarization) backscatter channels
+    Both channels are provided at the same 10m ground resolution.
+  coverage: >
+    Global land surfaces. Sentinel-1 operates in Interferometric Wide (IW)
+    swath mode over land, covering a 250km swath. Near-global land coverage
+    between approximately 84°N and 56°S. Some gaps exist in low-priority
+    regions (open ocean, Antarctica interior). Coverage density is higher
+    over Europe and other priority areas defined by ESA.
+  coordinate_system: UTM zones / WGS84 (EPSG varies by zone)
+
+temporal:
+  cadence: >
+    12-day exact repeat cycle per satellite. With both Sentinel-1A and 1C
+    operating, effective revisit is 6 days. Over Europe and other priority
+    areas, revisit can be as frequent as every 6 days from a single satellite
+    due to overlapping orbits at higher latitudes.
+  archive_start: "2014-04-03 (Sentinel-1A); 2023-12-02 (Sentinel-1C, replacing 1B)"
+  latency: >
+    RTC products on Microsoft Planetary Computer are typically available
+    within a few days of acquisition. Raw data is available within hours
+    through Copernicus services.
+
+bands:
+  - "VV - Co-polarization backscatter (C-band, 5.405 GHz, 10m)"
+  - "VH - Cross-polarization backscatter (C-band, 5.405 GHz, 10m)"
+
+formats:
+  native: GeoTIFF (Cloud-Optimized GeoTIFF on Planetary Computer)
+  common_conversions: >
+    Data is already served as COG on Planetary Computer. Values are
+    backscatter coefficients (gamma-nought) in linear power scale.
+    Common to convert to decibels (dB) via 10 * log10(value) for
+    visualization and some analyses.
+
+access:
+  method: >
+    Microsoft Planetary Computer STAC API. The collection ID is
+    'sentinel-1-rtc'. Access via pystac-client with the Planetary
+    Computer modifier for token signing.
+  auth: >
+    Free. No registration required for STAC API search. Planetary Computer
+    hub account needed for compute environment, but data access is open.
+  alternatives: >
+    ASF DAAC (Alaska Satellite Facility) provides the authoritative archive
+    with on-demand RTC processing via HyP3. Google Earth Engine hosts
+    Sentinel-1 GRD (not RTC — requires separate terrain correction).
+    Copernicus Data Space Ecosystem provides Level-1 SLC and GRD products.
+    AWS hosts the ASF RTC dataset as open data.
+
+strengths: |
+  SAR (Synthetic Aperture Radar) is fundamentally different from optical
+  imagery. It is an active sensor that transmits microwave pulses and
+  measures the returned signal, which means it operates independent of
+  sunlight (day and night) and sees through clouds, haze, and smoke.
+  This makes Sentinel-1 the go-to dataset when cloud cover prevents
+  optical observation — particularly in tropical regions, during monsoon
+  seasons, and for rapid disaster response where waiting for clear skies
+  is not an option.
+
+  The C-band microwave signal (5.405 GHz, ~5.5cm wavelength) interacts
+  with surface structure at the centimeter-to-meter scale. It is highly
+  sensitive to surface roughness, dielectric properties (especially
+  moisture content), and geometric structure of the surface. This makes
+  it excellent for:
+
+  - Flood mapping and monitoring: Water surfaces produce very low
+    backscatter (they appear dark), making flooded areas easy to
+    distinguish from surrounding land.
+  - Soil moisture estimation: Backscatter intensity correlates with
+    soil water content, particularly in bare or sparsely vegetated areas.
+  - Change detection: SAR coherence and intensity changes reliably
+    detect construction, deforestation, earthquake damage, and other
+    surface modifications.
+  - Ice and snow monitoring: SAR can distinguish wet snow, dry snow,
+    and ice types based on their different backscatter signatures.
+  - Crop monitoring: VH/VV ratio tracks vegetation growth stages
+    through the growing season, even under persistent cloud cover.
+
+  The dual-polarization (VV + VH) channels provide two complementary
+  views of the surface. VV is more sensitive to surface roughness and
+  soil moisture, while VH responds more to volume scattering from
+  vegetation canopy structure.
+
+  At 10m resolution, Sentinel-1 matches Sentinel-2's best bands and
+  is free and open — making SAR-optical fusion straightforward.
+
+limitations: |
+  SAR data is fundamentally harder to interpret than optical imagery.
+  There is no color or spectral information — you only have backscatter
+  intensity in two polarization channels. Visual interpretation requires
+  training and experience.
+
+  Speckle noise is inherent in all coherent imaging systems like SAR.
+  Individual pixels have a multiplicative noise pattern (salt-and-pepper
+  appearance) that must be filtered before quantitative analysis. Common
+  filters include Lee, Frost, and multi-temporal averaging, but all
+  involve tradeoffs between noise reduction and spatial detail.
+
+  Geometric distortions are a significant challenge in mountainous
+  terrain. Foreshortening (slopes facing the sensor appear compressed),
+  layover (steep slopes fold over onto themselves), and radar shadow
+  (areas behind steep slopes receive no signal) all degrade data quality
+  in rugged topography. The RTC processing corrects for radiometric
+  effects of terrain but does not eliminate geometric distortions.
+
+  C-band has limited penetration into dense vegetation canopy. In
+  tropical forests, the signal primarily interacts with the canopy top
+  and upper branches, not the ground surface. For biomass estimation
+  in dense forests, L-band SAR (ALOS PALSAR, future NISAR) is preferred.
+
+  SAR cannot provide information about surface material composition
+  or color — there are no spectral indices equivalent to NDVI or NDWI
+  from optical data. For vegetation health assessment or mineral mapping,
+  SAR must be combined with optical data.
+
+  Orbital geometry means the sensor always looks to the right at a
+  fixed incidence angle range (~30-46 degrees for IW mode). Features
+  look different depending on their orientation relative to the orbit
+  direction (ascending vs. descending passes).
+
+preprocessing_notes: |
+  The RTC (Radiometric Terrain Corrected) product on Planetary Computer
+  has already undergone significant preprocessing: thermal noise removal,
+  radiometric calibration to gamma-nought, and terrain correction using
+  the Copernicus DEM. This eliminates the most complex SAR preprocessing
+  steps that would otherwise require specialized software (SNAP, ISCE).
+
+  Values are provided in linear power scale (gamma-nought). For most
+  visualization and many analyses, convert to decibels: dB = 10 * log10(value).
+  Typical backscatter ranges in dB: water -20 to -25 dB, bare soil -10
+  to -15 dB, vegetation -5 to -12 dB, urban 0 to -5 dB.
+
+  The missing/no-data value in the Data Engine is -32768.0 (float32).
+  Be sure to mask these before computing statistics or converting to dB
+  (log of a negative number is undefined).
+
+  Speckle filtering is NOT applied in the RTC product — you will need
+  to apply your own if needed. For single-date analysis, a spatial filter
+  (e.g., Lee filter with 5x5 or 7x7 window) is common. For time series,
+  multi-temporal averaging or compositing is often more effective and
+  preserves spatial detail better than spatial filtering.
+
+  When combining with Sentinel-2, both are natively at 10m resolution,
+  but ensure you are reprojecting to a common CRS and pixel grid. The
+  Data Engine handles this alignment automatically through the
+  CollectionInput configuration.
+
+  SAR acquisition geometry matters: ascending (south-to-north, evening)
+  and descending (north-to-south, morning) passes see terrain from
+  different angles. For consistency, filter to one orbit direction if
+  geometric effects are a concern for your application.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # Optical-SAR fusion for cloud-gap filling and richer feature space
+  - cop-dem         # DEM needed for understanding terrain effects on SAR backscatter
+  - nasadem         # Alternative DEM for terrain analysis alongside SAR

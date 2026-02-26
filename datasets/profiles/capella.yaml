@@ -1,0 +1,136 @@
+id: capella
+name: Capella Space SAR
+provider: Capella Space
+
+spatial:
+  resolution: |
+    ~1m (0.5m achievable in Spotlight mode). X-band SAR operating at
+    ~9.65 GHz (~3.1 cm wavelength). Single-polarization HH is the
+    dominant product in our collection (>98% of holdings).
+  coverage: >
+    Global (tasking-based). Coverage is not systematic — imagery is
+    acquired on-demand via commercial tasking orders. Archive availability
+    depends on what has been previously tasked. Dense coverage over
+    areas of commercial interest; sparse or no coverage elsewhere.
+  coordinate_system: UTM zones / WGS84 (EPSG varies by zone)
+
+temporal:
+  cadence: >
+    On-demand tasking with sub-daily revisit capability (constellation
+    of multiple satellites). Not a systematic repeat-pass sensor — each
+    acquisition must be ordered. Rapid tasking available for time-sensitive
+    needs.
+  archive_start: "2020 (operational constellation)"
+  latency: >
+    Tasked acquisitions typically delivered within hours of collection.
+    Archive imagery available immediately through STAC catalog.
+
+bands:
+  - "HH - Horizontal transmit, Horizontal receive (X-band, ~3.1cm wavelength)"
+
+formats:
+  native: GeoTIFF (single-band amplitude/intensity imagery)
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). Data is served as COG through
+    Hum's internal STAC FastAPI catalog.
+
+access:
+  method: >
+    Hum's internal STAC FastAPI catalog (collection ID: 'capella').
+    Accessed programmatically via the data engine library using
+    CollectionName.CAPELLA. STAC catalog ID: 'stac-fastapi'.
+  auth: Commercial license — access through Hum's data engine with appropriate credentials
+  alternatives: >
+    Capella Space Console (direct from provider). Some imagery available
+    through third-party platforms, but Hum's STAC catalog is the primary
+    access point for internal use.
+
+strengths: |
+  Very high resolution SAR (~1m) that operates completely independently
+  of weather and lighting conditions. X-band radar penetrates clouds,
+  rain, smoke, and haze, and works equally well day or night. This makes
+  Capella invaluable when optical imagery is unavailable due to persistent
+  cloud cover (tropical regions, maritime climates, disaster response
+  during storms).
+
+  The ~1m resolution is exceptional for SAR — sufficient to resolve
+  individual buildings, infrastructure elements, ships, and large
+  vehicles. X-band is particularly well-suited for urban and
+  infrastructure monitoring because it scatters strongly off built
+  structures, metal surfaces, and sharp geometric features. Double-bounce
+  scattering from building walls makes urban structures highly visible.
+
+  Rapid tasking capability means imagery can be acquired within hours
+  for time-sensitive applications like disaster response, maritime
+  domain awareness, or monitoring construction activity. The
+  constellation's sub-daily revisit potential enables near-continuous
+  monitoring when needed.
+
+  SAR amplitude data enables coherent change detection, and the high
+  resolution allows detection of relatively small changes in the built
+  environment. When paired with optical data (Sentinel-2, SuperDove),
+  provides a complementary view that captures structural and geometric
+  properties that optical sensors miss.
+
+limitations: |
+  Commercial and expensive — every acquisition has a cost, so it is not
+  practical for large-area systematic monitoring the way free sensors
+  like Sentinel-1 are. Use Sentinel-1 for broad-area SAR needs and
+  reserve Capella for targeted high-resolution requirements.
+
+  Single polarization (HH) dominates our holdings, which limits some
+  SAR applications. Dual-pol or quad-pol data (available from Sentinel-1
+  or some Umbra products) is better for land cover classification,
+  vegetation characterization, and polarimetric decomposition. HH alone
+  cannot distinguish vegetation types or estimate biomass as effectively
+  as multi-polarization data.
+
+  SAR imagery requires specialized interpretation expertise. Unlike
+  optical imagery, SAR backscatter is not intuitive — it represents
+  surface roughness and dielectric properties, not reflectance. Radar
+  shadow, layover, and foreshortening distort the geometry of the scene,
+  especially in mountainous or urban terrain with tall structures.
+
+  Speckle noise is inherent in all SAR imagery and must be filtered
+  before most analyses. This filtering trades spatial resolution for
+  radiometric accuracy, so the effective resolution after processing
+  may be coarser than the native ~1m.
+
+  X-band has limited penetration into vegetation canopy compared to
+  longer-wavelength SAR (C-band Sentinel-1, L-band ALOS). It primarily
+  interacts with the top of the canopy and is less useful for
+  forest structure or biomass estimation than longer wavelengths.
+
+preprocessing_notes: |
+  Speckle filtering is essential before most analyses. Common filters
+  include Lee, Frost, Gamma-MAP, or multi-looking. Choose filter
+  parameters carefully — aggressive filtering smooths out fine details
+  that the 1m resolution provides.
+
+  Radiometric calibration: convert digital numbers to sigma-nought
+  (backscatter coefficient) for quantitative analysis or comparison
+  across scenes. Check metadata for calibration parameters.
+
+  Terrain correction: in areas with significant topography, apply
+  Range-Doppler terrain correction using a DEM (e.g., Copernicus DEM)
+  to remove geometric distortions from foreshortening, layover, and
+  shadow. This is critical for mountainous terrain.
+
+  For change detection, ensure images are coregistered and acquired
+  from similar viewing geometries (incidence angles). Different
+  incidence angles produce different backscatter responses from the
+  same target, confounding change analysis.
+
+  When combining with optical imagery, reproject to a common CRS and
+  resolution. SAR and optical data have fundamentally different pixel
+  values (backscatter vs. reflectance), so they should be treated as
+  complementary layers rather than directly compared.
+
+  The data engine accesses Capella through CollectionName.CAPELLA with
+  band ID 'HH' at 1.0m default resolution. The ObservationType for
+  Capella in the data engine is CAPELLA_HH.
+
+commonly_paired_with:
+  - sentinel-1-rtc  # Free SAR for broad-area context and time series
+  - sentinel-2-l2a  # Optical complement for spectral information
+  - umbra  # Another commercial high-res SAR for cross-comparison

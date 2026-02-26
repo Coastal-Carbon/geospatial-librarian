@@ -1,0 +1,127 @@
+id: io-lulc-annual
+name: Impact Observatory Annual Land Use/Land Cover (IO LULC v2)
+provider: Impact Observatory / Esri / Microsoft
+
+spatial:
+  resolution: |
+    10m global land cover classification derived from Sentinel-2 imagery.
+    Single-band categorical raster — each pixel is assigned one of 9 land
+    cover classes (plus No_Data and Clouds). All classes are at the same
+    10m spatial resolution.
+  coverage: >
+    Global land surfaces. Full wall-to-wall coverage for each year in the
+    archive (2017-2023). Coverage extends to all areas where Sentinel-2
+    imagery is available, including most islands and coastal zones.
+  coordinate_system: WGS84 (EPSG:4326)
+
+temporal:
+  cadence: >
+    Annual. One global map is produced per calendar year, representing
+    the dominant land cover class for that year.
+  archive_start: "2017"
+  latency: >
+    Annual release cycle. Each year's map is typically published several
+    months after the end of the calendar year.
+
+layers:
+  - "data (categorical land cover classification, uint8 pixel values)"
+
+formats:
+  native: Cloud-Optimized GeoTIFF (COG), tiled by year
+  common_conversions: >
+    Typically consumed as-is (COG via STAC). For zonal summaries the Data
+    Engine reads tiles via odc-stac and computes per-H3-cell statistics
+    (majority class, unique class count, and optional histograms).
+
+access:
+  method: >
+    Microsoft Planetary Computer STAC API. Collection ID: io-lulc-annual-v02.
+    Searchable by bounding box and date range. Tiles are served as
+    Cloud-Optimized GeoTIFFs accessible via HTTP range requests.
+  auth: >
+    Free, no authentication required. Planetary Computer provides
+    anonymous access to this collection.
+  alternatives: >
+    Esri Living Atlas (ArcGIS Online). The dataset can also be explored
+    interactively through the Esri Living Atlas web viewer.
+
+strengths: |
+  Annual temporal resolution is the defining advantage. Provides a
+  consistent 10m global land cover map for every year from 2017 to 2023,
+  enabling year-over-year land use change tracking. This temporal
+  dimension is what distinguishes it from ESA WorldCover, which only
+  provides snapshots for 2020 and 2021.
+
+  Uses the same 9-class scheme as ESA WorldCover (Water, Trees,
+  Flooded_vegetation, Crops, Built_area, Bare_ground, Snow_ice, Clouds,
+  Rangeland), making the two datasets directly comparable and
+  interchangeable for most classification workflows.
+
+  10m resolution is sufficient to capture meaningful land cover patterns
+  at the scale of individual fields, neighborhoods, and small water
+  bodies. This makes it useful for site characterization, environmental
+  impact assessment, and regional planning contexts.
+
+  In the Data Engine, this dataset is the primary source for ancillary
+  land cover context. For each H3 cell, the engine computes
+  landcover_majority (the dominant class) and landcover_unique (number
+  of distinct classes present), providing a compact land cover signature
+  that can be used as features in downstream models or for stratified
+  sampling.
+
+  Free and openly available through Microsoft Planetary Computer with
+  no authentication required.
+
+limitations: |
+  Classification accuracy varies by region and year. The product is
+  derived from an automated deep learning classifier applied to
+  Sentinel-2 composites, and accuracy is generally lower than
+  manually validated products like ESA WorldCover for any single year.
+
+  Inter-annual consistency is not guaranteed. The same location may be
+  classified differently in adjacent years not because of actual land
+  cover change but due to differences in input imagery quality, cloud
+  contamination, or classifier behavior. Care is needed when
+  interpreting year-over-year transitions — not all changes are real.
+
+  The 9-class scheme is relatively coarse. It cannot distinguish crop
+  types, forest types, or urban density gradations. For applications
+  requiring finer thematic detail (e.g., separating rice paddies from
+  wheat, or dense urban from suburban), a more detailed classification
+  or custom model is needed.
+
+  Cloud class (value 10) appears in some pixels, meaning the classifier
+  could not determine the land cover. These pixels need to be handled
+  (masked or gap-filled) in analysis workflows.
+
+  10m resolution means sub-pixel features (narrow roads, individual
+  buildings in sparse areas, narrow streams) may not be captured.
+
+preprocessing_notes: |
+  The data is categorical (uint8), not continuous. Standard raster
+  operations like averaging or interpolation are NOT appropriate.
+  Use mode (majority), counts, or histograms for spatial aggregation.
+
+  When loading via odc-stac, set the nodata value to 0 (No_Data class)
+  to properly mask missing data. The Data Engine does this automatically:
+  data.rio.write_nodata(0, inplace=True).
+
+  For change detection between years, load multiple years and compare
+  pixel values directly. Be aware that some apparent changes may be
+  classification artifacts rather than real land cover transitions.
+  Consider requiring a change to persist for 2+ consecutive years
+  before treating it as genuine.
+
+  For integration with other raster datasets (Sentinel-2, DEM), reproject
+  to match the target CRS. Since the data is categorical, use
+  nearest-neighbor resampling to avoid creating invalid class values.
+
+  The LandcoverCategory enum in the Data Engine maps pixel values to
+  class names: No_Data=0, Water=1, Trees=2, Flooded_vegetation=4,
+  Crops=5, Built_area=7, Bare_ground=8, Snow_ice=9, Clouds=10,
+  Rangeland=11. Note the gaps in the numbering (no values 3 or 6).
+
+commonly_paired_with:
+  - esa-worldcover    # Cross-validation, single-year comparison
+  - sentinel-2-l2a    # Source imagery, custom classification
+  - cop-dem           # Terrain context for land cover analysis

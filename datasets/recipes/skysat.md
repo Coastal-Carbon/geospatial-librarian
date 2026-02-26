@@ -1,0 +1,169 @@
+# SkySat Recipes
+
+Practical patterns for working with Planet SkySat imagery through Hum's
+data engine. SkySat is accessed via the internal STAC FastAPI catalog
+(`CollectionName.SKYSAT`).
+
+## Quick Reference
+
+| Property | Value |
+|---|---|
+| Collection enum | `CollectionName.SKYSAT` |
+| STAC catalog | `stac-fastapi` |
+| STAC collection | `skysat` |
+| Bands | Blue, Green, Red, Near-Infrared |
+| Band IDs (STAC) | `Blue`, `Green`, `Red`, `Near-Infrared` |
+| Band indices | 0=Blue, 1=Green, 2=Red, 3=NIR |
+| Working resolution | 1.0m (multispectral) |
+| ObservationTypes | `SKYSAT_BLUE`, `SKYSAT_GREEN`, `SKYSAT_RED`, `SKYSAT_NIR` |
+
+## Recipe 1: Search for SkySat Archive Imagery
+
+Search the Hum STAC catalog for existing SkySat scenes over an area of
+interest. This is the first step in any SkySat workflow — check what
+archive data is available before considering a new tasking order.
+
+```python
+from datetime import datetime, timezone
+from shapely.geometry import box
+
+from hum_ai.data_engine.collections import CollectionName
+from hum_ai.data_engine.ingredients import CollectionInput, Range
+from hum_ai.data_engine.manifest import manifest_from_stac_search
+
+# Define your area of interest as a bounding box (lon_min, lat_min, lon_max, lat_max)
+aoi = box(-122.45, 37.75, -122.40, 37.80)
+
+# Define a time range
+time_range = Range(
+    min=datetime(2023, 1, 1, tzinfo=timezone.utc),
+    max=datetime(2024, 1, 1, tzinfo=timezone.utc),
+)
+
+# Configure the SkySat collection input
+skysat_input = CollectionInput(
+    collection_name=CollectionName.SKYSAT,
+    # defaults to all 4 bands: ['Blue', 'Green', 'Red', 'Near-Infrared']
+    # defaults to resolution=1.0
+)
+
+# Search the catalog
+manifest = manifest_from_stac_search(
+    collections=[skysat_input],
+    geometry=aoi,
+    time_range=time_range,
+)
+
+print(f"Found {len(manifest.scenes)} SkySat scenes")
+for scene in manifest.scenes[:5]:
+    print(f"  {scene}")
+```
+
+## Recipe 2: Compute NDVI at Sub-Meter Resolution
+
+SkySat's NIR band enables vegetation analysis at 1m resolution. This is
+useful when Sentinel-2's 10m NDVI is too coarse (e.g., individual tree
+health, small garden plots, narrow riparian corridors).
+
+```python
+import numpy as np
+
+from hum_ai.data_engine.collections import CollectionName
+from hum_ai.data_engine.ingredients import CollectionInput
+
+# Use only the Red and NIR bands for efficiency
+skysat_input = CollectionInput(
+    collection_name=CollectionName.SKYSAT,
+    band_ids=('Red', 'Near-Infrared'),
+)
+
+# After loading raster data (e.g., via odc-stac or rasterio):
+# red = ...  # Red band array
+# nir = ...  # NIR band array
+
+# Compute NDVI
+# ndvi = (nir.astype(float) - red.astype(float)) / (nir + red + 1e-10)
+```
+
+## Recipe 3: Fuse SkySat with Sentinel-2 for Spectral Depth
+
+SkySat provides spatial detail but only 4 bands. Sentinel-2 provides 13
+bands but at 10-20m resolution. Combining them gives you both spatial
+detail and spectral richness.
+
+**Strategy:** Use Sentinel-2 for spectral indices that require SWIR or
+red edge bands (NDWI, NBR, NDRE), then overlay or fuse with SkySat for
+spatial sharpening or fine-scale segmentation.
+
+```python
+from hum_ai.data_engine.collections import CollectionName
+from hum_ai.data_engine.ingredients import CollectionInput
+
+# High spatial resolution from SkySat
+skysat_input = CollectionInput(
+    collection_name=CollectionName.SKYSAT,
+    resolution=1.0,
+)
+
+# Spectral depth from Sentinel-2
+sentinel2_input = CollectionInput(
+    collection_name=CollectionName.SENTINEL2,
+    band_ids=('B04', 'B05', 'B06', 'B07', 'B08', 'B11', 'B12'),
+    resolution=10.0,
+)
+
+# Both can be passed to the data engine pipeline as separate collection inputs.
+# The data engine will handle resampling to a common grid via the
+# SpatialConfig and the resolution parameter on each CollectionInput.
+```
+
+## Recipe 4: Multi-Sensor VHR Stack (SkySat + SuperDove)
+
+When you need more spectral bands at high resolution, pair SkySat (4 bands,
+1m) with Planet SuperDove (8 bands including red edge, ~3m). Both are
+available in Hum's STAC catalog.
+
+```python
+from hum_ai.data_engine.collections import CollectionName
+from hum_ai.data_engine.ingredients import CollectionInput
+
+skysat_input = CollectionInput(
+    collection_name=CollectionName.SKYSAT,
+    resolution=1.0,
+)
+
+superdove_input = CollectionInput(
+    collection_name=CollectionName.SUPERDOVE,
+    resolution=3.0,  # native resolution
+)
+
+# Use both as inputs to a data engine Plan for multi-sensor analysis
+```
+
+## Tips and Gotchas
+
+1. **Check archive availability first.** SkySat coverage is not global or
+   systematic. Always search the catalog before building a pipeline — your
+   AOI may have zero scenes.
+
+2. **Band ID casing matters.** The STAC band IDs are `'Blue'`, `'Green'`,
+   `'Red'`, `'Near-Infrared'` (title case with hyphen). These must match
+   exactly when constructing a `CollectionInput` with explicit `band_ids`.
+
+3. **Resolution parameter.** The default resolution in `SOURCE_INFO` is
+   `1.0` (meters). If you want to work at a coarser grid (e.g., to match
+   Sentinel-2), pass `resolution=10.0` to `CollectionInput`.
+
+4. **No cloud mask band.** Unlike Sentinel-2 (SCL band), SkySat does not
+   include a built-in cloud classification layer. You will need to apply
+   external cloud masking or manual QA filtering.
+
+5. **Deep learning over pixel-based methods.** At 1m resolution, individual
+   pixels represent sub-object features. Traditional pixel-based classifiers
+   (e.g., Random Forest on spectral values) tend to produce noisy results.
+   Use object-based or deep learning segmentation instead.
+
+6. **ObservationType mapping.** The `COLLECTION_BAND_MAP` maps band indices
+   to: `SKYSAT_BLUE` (0), `SKYSAT_GREEN` (1), `SKYSAT_RED` (2),
+   `SKYSAT_NIR` (3). Use these when working with the data engine's
+   `ObservationType` enum.

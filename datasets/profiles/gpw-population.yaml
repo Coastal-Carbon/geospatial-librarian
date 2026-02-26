@@ -1,0 +1,145 @@
+id: gpw-population
+name: Gridded Population of the World v4 (GPW)
+provider: CIESIN (Center for International Earth Science Information Network), Columbia University
+
+spatial:
+  resolution: |
+    30 arc-seconds (~1km at the equator). This is a relatively coarse
+    resolution for population density — individual neighborhoods or
+    settlements below ~1km cannot be resolved. At higher latitudes the
+    effective ground distance per pixel shrinks due to meridian convergence.
+  coverage: >
+    Global land surfaces. Population density values cover all countries
+    and territories. Ocean cells are masked as NoData. Coverage quality
+    depends on the underlying national census data — countries with
+    recent, high-quality censuses yield more accurate gridded estimates
+    than those with outdated or incomplete enumeration.
+  coordinate_system: WGS84 (EPSG:4326)
+
+temporal:
+  cadence: >
+    5-year snapshots aligned to census rounds: 2000, 2005, 2010, 2015,
+    2020. No continuous time series — each raster represents a single
+    modeled estimate for that year.
+  archive_start: "2000 (GPW v4 revision 11)"
+  latency: >
+    N/A — retrospective product. New releases incorporate updated census
+    data and improved modeling but are published on an irregular schedule
+    by CIESIN. The most recent revision (rev11) was released in 2018
+    and covers estimates through 2020.
+
+layers:
+  - "Population Density (persons per square kilometer)"
+
+formats:
+  native: GeoTIFF (single global file per year, ~1km resolution)
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG) for efficient range-request access
+    from S3 or HTTP. The Data Engine reads the native GeoTIFF directly
+    from S3 using rasterio/rioxarray.
+
+access:
+  method: >
+    S3 bucket (cc-dataocean/population/gpw/) for Data Engine use.
+    Files follow the naming pattern:
+    gpw_v4_population_density_rev11_{year}_30_sec.tif
+    where {year} is one of 2000, 2005, 2010, 2015, 2020.
+  auth: >
+    S3 access requires Hum AWS credentials (cc-dataocean bucket).
+    The original data is freely available from NASA SEDAC with a free
+    Earthdata Login account.
+  alternatives: >
+    NASA SEDAC (Socioeconomic Data and Applications Center) at
+    sedac.ciesin.columbia.edu — the canonical public distribution
+    point. Also available via Google Earth Engine as
+    'CIESIN/GPWv411/GPW_Population_Density'. The SEDAC portal offers
+    additional GPW products (population count, UN-adjusted variants,
+    land/water area masks) beyond the density layer used here.
+
+strengths: |
+  The standard global gridded population density dataset. GPW uses a
+  uniform allocation methodology that distributes census counts into
+  grid cells proportional to land area, making it methodologically
+  transparent and reproducible.
+
+  Consistent methodology across all five time steps (2000-2020) means
+  temporal comparisons are valid — changes in the gridded values reflect
+  actual census-reported population change rather than methodological
+  shifts. This is important for urbanization studies and trend analysis.
+
+  As a contextual layer in the Data Engine, population density provides
+  essential human-dimension context for remote sensing workflows:
+  distinguishing urban vs. rural land cover, estimating infrastructure
+  demand, assessing environmental impact of land use change, and
+  stratifying sampling designs by population pressure.
+
+  The ~1km resolution is well-matched to H3 resolution 7 cells (1.2km
+  spacing, 1.4km2 area), which is the default H3 resolution used in the
+  Data Engine for GPW ingestion. This means each H3 cell typically
+  contains a meaningful number of GPW pixels for robust zonal statistics.
+
+limitations: |
+  ~1km resolution cannot capture fine-grained population distribution
+  within cities — a 1km cell in a city center and a 1km cell in a
+  nearby suburb may show similar moderate density rather than the true
+  gradient. For intra-urban analysis, higher-resolution population
+  products (WorldPop ~100m, GHSL ~250m) may be more appropriate, though
+  they use different modeling approaches.
+
+  Based on national census data, which varies enormously in quality,
+  recency, and spatial granularity. Countries with sub-district-level
+  census units produce sharp gridded estimates; countries where the
+  finest census unit is a large province produce highly smoothed
+  estimates that may not reflect actual settlement patterns.
+
+  5-year snapshots only — no annual or sub-annual resolution. Rapid
+  population changes (refugee movements, disaster displacement, boom
+  towns) between census years are not captured.
+
+  The uniform allocation methodology does not use ancillary data (roads,
+  lights, land cover) to refine the spatial distribution of population
+  within census units. This means GPW tends to spread population more
+  evenly across a census unit than reality, especially in large rural
+  units where people are concentrated in small settlements.
+
+  NoData handling: ocean cells and some small islands may have NoData
+  values. When computing zonal statistics, cells near coastlines should
+  be checked for partial coverage.
+
+preprocessing_notes: |
+  In the Data Engine, GPW is consumed as an ancillary data source via
+  the PopulationAncillaryData class in
+  hum_ai.data_engine.ancillary.population. It is NOT a STAC collection
+  — it does not go through CollectionInput or the catalog search
+  workflow.
+
+  The summarize_from_cells() method reads the GeoTIFF from S3 using
+  rioxarray, clips to each H3 cell boundary, and computes zonal
+  statistics (median and range) via rasterstats. The output columns
+  are: cell, start_time, end_time, population_median, population_range.
+
+  Currently only the 2020 year is active in the Data Engine (the years
+  list in METADATA is set to [2020]). The code supports all five years
+  (2000-2020) but they are commented out. To enable multi-year
+  ingestion, uncomment the full years list in the METADATA dictionary.
+
+  H3 resolution selection matters: at H3 res 7 (the default), each
+  hexagon is ~1.4km2 and typically covers several GPW pixels. At H3
+  res 8 or higher, hexagons become smaller than a single GPW pixel,
+  and the code automatically switches to all_touched=True rasterization
+  to ensure every cell gets a value.
+
+  The population density values are in persons per square kilometer.
+  These are floating-point values — a cell with 0.5 means approximately
+  half a person per km2, typical of very sparsely populated areas. Dense
+  urban areas can exceed 50,000 persons/km2.
+
+  For temporal analysis, each year is assigned a 5-year validity window
+  (e.g., 2020-01-01 to 2024-12-31) in the output dataframe's
+  start_time and end_time columns.
+
+commonly_paired_with:
+  - esa-worldcover     # Land cover context for interpreting population patterns
+  - io-lulc-annual     # Annual land use change alongside population trends
+  - nasadem            # Terrain context — population vs. elevation/slope
+  - hwsd2-soils        # Soil characteristics in populated vs. unpopulated areas

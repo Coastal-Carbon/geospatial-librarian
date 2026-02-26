@@ -1,0 +1,150 @@
+id: pleiades
+name: Pleiades Neo (Airbus) Multispectral Imagery
+provider: Airbus Defence and Space
+
+spatial:
+  resolution: |
+    1m multispectral (resampled from native 1.2m GSD) for all 6 bands.
+    Panchromatic band available at 0.3m but not ingested into Data Engine.
+    All multispectral bands delivered at the same 1m resolution.
+  coverage: >
+    Global coverage via tasking (new acquisitions on demand) and archive
+    (previously acquired scenes). Coverage density varies significantly —
+    urban areas, commercial agriculture regions, and areas of strategic
+    interest have extensive archive holdings. Remote or low-demand areas
+    may have little to no existing archive and require new tasking.
+    Commercial license required for access.
+  coordinate_system: UTM / WGS84 (EPSG varies by zone)
+
+temporal:
+  cadence: >
+    Not a fixed revisit — Pleiades is a tasking-based constellation.
+    The Pleiades Neo constellation (two satellites) can revisit any point
+    on Earth daily, but actual acquisition depends on tasking priority
+    and scheduling. Archive imagery availability varies by location.
+  archive_start: "2012 (Pleiades 1A); Pleiades Neo from 2021"
+  latency: >
+    New tasking orders typically fulfilled within days to weeks depending
+    on priority level and weather. Archive imagery available within hours
+    of order placement. Data Engine access depends on Hum's ingestion
+    pipeline from the Airbus OneAtlas platform.
+
+bands:
+  - "Coastal Blue (~443nm, 1m)"
+  - "Blue (~490nm, 1m)"
+  - "Green (~560nm, 1m)"
+  - "Red (~665nm, 1m)"
+  - "Vegetation Red Edge (~705nm, 1m)"
+  - "Near-Infrared (~842nm, 1m)"
+
+formats:
+  native: GeoTIFF (Cloud-Optimized) served via Hum's internal STAC FastAPI
+  common_conversions: >
+    Already served as COG from Hum's STAC catalog. No format conversion
+    typically needed for Data Engine workflows.
+
+access:
+  method: >
+    Hum's internal STAC FastAPI catalog (catalog_id: 'stac-fastapi',
+    collection_id: 'pleiades'). Accessed programmatically through the
+    Data Engine library using CollectionName.PLEIADES.
+  auth: >
+    Commercial license required. Data is not publicly available. Access
+    is through Hum's internal infrastructure, which holds licensed
+    Pleiades imagery sourced from the Airbus OneAtlas platform.
+    Individual users do not need their own Airbus license — Hum's
+    organizational license covers Data Engine access.
+  alternatives: >
+    Airbus OneAtlas platform (direct commercial purchase). UP42 marketplace.
+    Some archive scenes available through national mapping agencies or
+    academic programs, but these are not integrated with the Data Engine.
+
+strengths: |
+  Sub-meter effective resolution (1m multispectral, 0.3m pan) combined
+  with 6 spectral bands including a red edge band — a rare combination
+  in commercial very-high-resolution imagery. Most VHR sensors offer
+  only 4 bands (RGB+NIR), but Pleiades Neo adds Coastal Blue and
+  Vegetation Red Edge, enabling more sophisticated spectral analysis
+  at very high spatial resolution.
+
+  The red edge band (~705nm) is particularly valuable for vegetation
+  health assessment, crop stress detection, and species differentiation
+  at the individual plant or tree scale. Combined with the NIR band,
+  you can compute NDRE (Normalized Difference Red Edge) at 1m resolution,
+  which is highly sensitive to chlorophyll content and canopy structure.
+
+  At 1m resolution, individual buildings, vehicles, narrow roads,
+  driveways, and even large individual trees are clearly resolvable.
+  This makes it ideal for urban mapping, infrastructure monitoring,
+  precision agriculture, and detailed environmental assessments where
+  Sentinel-2's 10m resolution is insufficient.
+
+  The Coastal Blue band (~443nm) is useful for shallow water mapping,
+  coastal habitat assessment, and atmospheric correction. Together with
+  the standard Blue band, it provides better discrimination of water
+  turbidity and benthic features.
+
+  Already ingested into Hum's STAC catalog, making it accessible
+  through the standard Data Engine pipeline without separate procurement.
+
+limitations: |
+  Commercial and expensive — this is not open data. Availability is
+  limited to what Hum has licensed and ingested. You cannot freely
+  browse or access the full Airbus archive through the Data Engine.
+
+  Tasking-based acquisition means archive coverage is highly uneven.
+  Many areas of the world, particularly remote or low-commercial-interest
+  regions, will have sparse or no Pleiades coverage in Hum's holdings.
+  Always check data availability before designing a workflow around
+  Pleiades data.
+
+  No fixed revisit cadence makes time series analysis difficult. Unlike
+  Sentinel-2's systematic 5-day revisit, Pleiades acquisitions are
+  opportunistic. Building consistent temporal stacks for change detection
+  requires careful scene selection and may have large temporal gaps.
+
+  The spectral range, while better than most VHR sensors, still lacks
+  SWIR bands. This means no moisture-related indices (NDMI, NBR) and
+  limited ability to distinguish materials that differ primarily in
+  the shortwave infrared. For SWIR analysis, pair with Sentinel-2.
+
+  High spatial resolution means very large file sizes. A single scene
+  can be several gigabytes. Processing large areas requires substantial
+  compute resources and careful tiling strategies.
+
+  Not suitable for broad-area screening or monitoring — cost and coverage
+  constraints mean Pleiades is best used for targeted, high-priority
+  sites rather than wall-to-wall regional mapping.
+
+preprocessing_notes: |
+  Pleiades imagery in Hum's STAC catalog is already orthorectified and
+  delivered as Cloud-Optimized GeoTIFFs, so no geometric correction or
+  format conversion is needed for standard Data Engine workflows.
+
+  When combining Pleiades with Sentinel-2 or other data sources in a
+  multi-source project, pay attention to resolution mismatches. The Data
+  Engine handles resampling via the CollectionInput resolution parameter,
+  but consider which resolution is appropriate for your analysis.
+
+  For vegetation indices using the red edge band, note that the band
+  wavelength metadata in the Data Engine is approximate (marked as TODO
+  in the source code). Verify exact wavelengths against Airbus product
+  documentation if precise spectral calibration matters for your analysis.
+
+  Band order in the Data Engine follows the SOURCE_INFO definition:
+  Coastal Blue, Blue, Green, Red, Vegetation Red Edge, Near-Infrared
+  (indices 0-5). This differs from some Airbus product orderings.
+
+  Cloud masking is not automatically provided as with Sentinel-2 L2A.
+  You may need to implement your own cloud detection or use the Data
+  Engine's quality filtering capabilities.
+
+  For cross-sensor analysis (e.g., Pleiades + Sentinel-2), be aware
+  that the sensors have different spectral response functions even for
+  nominally similar bands. Direct reflectance comparison across sensors
+  requires harmonization.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # For temporal density and SWIR bands
+  - naip  # For free VHR comparison over CONUS
+  - cop-dem  # For terrain context and orthorectification refinement
