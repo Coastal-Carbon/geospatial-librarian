@@ -31,15 +31,36 @@ A Claude Code subagent that maintains a curated catalog of geospatial datasets a
 datasets/
   index.yaml                — Tier 1: lightweight index (loaded fully into context)
   profiles/                 — Tier 2: detailed dataset profiles (loaded on demand)
-    sentinel-2-l2a.yaml
-    naip.yaml
-    osm-features.yaml
-    landsat-8-9.yaml
-    cop-dem.yaml
+    sentinel-2-l2a.yaml       Sentinel-2 L2A multispectral (10m, free)
+    sentinel-1-rtc.yaml       Sentinel-1 RTC SAR (10m, free)
+    landsat-8-9.yaml          Landsat 8/9 multispectral+thermal (30m, free)
+    naip.yaml                 NAIP aerial imagery (0.6m, US only, free)
+    pleiades.yaml             Pleiades Neo (1m, 6-band, commercial)
+    skysat.yaml               Planet SkySat (1m, RGB+NIR, commercial)
+    superdove.yaml            Planet SuperDove (3m, 8-band, commercial)
+    spot-ms.yaml              SPOT multispectral (6m, commercial)
+    worldview.yaml            Maxar WorldView (2m/0.5m pan, commercial)
+    wyvern.yaml               Wyvern hyperspectral (5.3m, 23-band, commercial)
+    capella.yaml              Capella X-band SAR (1m, commercial)
+    umbra.yaml                Umbra X-band SAR (1m, commercial)
+    esa-worldcover.yaml       ESA WorldCover land classification (10m, free)
+    io-lulc-annual.yaml       IO LULC Annual land cover (10m, 2017-2023, free)
+    cop-dem.yaml              Copernicus DEM (30m, free)
+    nasadem.yaml              NASADEM reprocessed SRTM (30m, free)
+    hwsd2-soils.yaml          Harmonized World Soil Database v2 (~1km, free)
+    gpw-population.yaml       Gridded Population of the World (~1km, free)
+    udel-weather-normals.yaml U.Delaware climate normals (~55km, free)
+    modis-nbar-vegetation.yaml MODIS NBAR vegetation indices (500m, free)
+    osm-features.yaml         OpenStreetMap vector features (free)
+  recipes/                  — Data Engine access guides and code snippets
+    {id}.md                   Natural language guide for each dataset
+    {id}.py                   Python code snippets using hum_ai.data_engine
 
 schemas/
   index-entry.schema.yaml   — Field definitions for index entries
   profile.schema.yaml       — Field definitions for full profiles
+
+.beads/                     — Beads issue tracker (dependency-aware task tracking)
 ```
 
 ## How It Works
@@ -51,6 +72,10 @@ The librarian uses a **two-tier catalog**:
 **Tier 2 (Profiles):** Rich, detailed profiles for each dataset. The agent loads only the profiles it needs after scanning the index. Contains strengths, limitations, preprocessing notes, access methods, and expert knowledge.
 
 The agent reasons from **dataset capabilities** rather than pre-enumerated use cases. For example, it doesn't need "parking lot detection" listed anywhere — it can reason that a dataset with 10m resolution that distinguishes built surfaces can identify parking lots.
+
+**Tier 3 (Recipes):** Practical guides for accessing each dataset through the [Hum Data Engine](https://github.com/Coastal-Carbon/data-engine). Each recipe has two files:
+- A **markdown guide** (`{id}.md`) explaining how the Data Engine loads the dataset, what bands/layers are available, and how to configure pipelines
+- A **Python script** (`{id}.py`) with importable code snippets using `hum_ai.data_engine` classes like `CollectionInput`, `CollectionName`, and the ancillary data framework
 
 ## Adding a New Dataset
 
@@ -120,9 +145,35 @@ The first version describes capabilities that the agent can reason over. The sec
 
 Check if any existing profiles should add your new dataset to their `commonly_paired_with` list. For example, if you add a SAR dataset, the Sentinel-2 profile might want to reference it as a complement for cloud-covered conditions.
 
-### 5. Verify
+### 5. Write a Data Engine recipe
+
+If the dataset is accessible through the Hum Data Engine, create two recipe files:
+
+- `datasets/recipes/{id}.md` — A natural language guide explaining how the Data Engine accesses this dataset (STAC catalog, collection ID, band IDs, resolution, data type), how to configure a `CollectionInput` or ancillary data class, and how to use it in pipeline configurations (ImageChips, OlmoEarth, etc.)
+- `datasets/recipes/{id}.py` — Python code snippets showing imports, `CollectionInput` construction, pipeline setup, and spectral index computation. Use actual class names and enum values from `hum_ai.data_engine`.
+
+Use an existing recipe pair as a template — satellite imagery recipes follow a different pattern than ancillary data recipes.
+
+### 6. Verify
 
 The agent picks up new datasets automatically on its next invocation — no restart or configuration needed. Test by asking the librarian a question that your new dataset should be relevant to and confirm it gets recommended with sensible reasoning.
+
+## Current Catalog (21 datasets)
+
+| Category | Datasets | Resolution | Access |
+|----------|----------|------------|--------|
+| **Free Optical** | Sentinel-2 L2A, Landsat 8/9, NAIP | 10m, 30m, 0.6m | Free/open |
+| **SAR** | Sentinel-1 RTC, Capella, Umbra | 10m, 1m, 1m | Free (S1) / Commercial |
+| **Commercial VHR** | Pleiades, SkySat, SuperDove, SPOT-MS, WorldView | 1-6m | Commercial |
+| **Hyperspectral** | Wyvern | 5.3m | Commercial |
+| **Land Cover** | ESA WorldCover, IO LULC Annual | 10m | Free/open |
+| **Elevation** | Copernicus DEM, NASADEM | 30m | Free/open |
+| **Ancillary** | HWSD2 Soils, GPW Population, U.Delaware Weather, MODIS NBAR | 500m-55km | Free/open |
+| **Vector** | OpenStreetMap | Feature-level | Free/open |
+
+## Task Tracking
+
+This project uses [beads](https://github.com/steveyegge/beads) for dependency-aware issue tracking. Use `bd list` to see open tasks and `bd ready` to find unblocked work.
 
 ## Architecture Context
 
