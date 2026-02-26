@@ -24,21 +24,12 @@ interest. This is the first step in any SkySat workflow — check what
 archive data is available before considering a new tasking order.
 
 ```python
-from datetime import datetime, timezone
+from datetime import date
 from shapely.geometry import box
 
 from hum_ai.data_engine.collections import CollectionName
 from hum_ai.data_engine.ingredients import CollectionInput, Range
 from hum_ai.data_engine.manifest import manifest_from_stac_search
-
-# Define your area of interest as a bounding box (lon_min, lat_min, lon_max, lat_max)
-aoi = box(-122.45, 37.75, -122.40, 37.80)
-
-# Define a time range
-time_range = Range(
-    min=datetime(2023, 1, 1, tzinfo=timezone.utc),
-    max=datetime(2024, 1, 1, tzinfo=timezone.utc),
-)
 
 # Configure the SkySat collection input
 skysat_input = CollectionInput(
@@ -47,16 +38,22 @@ skysat_input = CollectionInput(
     # defaults to resolution=1.0
 )
 
-# Search the catalog
-manifest = manifest_from_stac_search(
-    collections=[skysat_input],
-    geometry=aoi,
-    time_range=time_range,
+# Define a date range
+date_range = Range(
+    min=date(2023, 1, 1),
+    max=date(2024, 1, 1),
 )
 
-print(f"Found {len(manifest.scenes)} SkySat scenes")
-for scene in manifest.scenes[:5]:
-    print(f"  {scene}")
+# Search the catalog using manifest_from_stac_search.
+# This function requires Scene objects (regions of interest), a chip size
+# in meters, collection inputs, and a date range:
+#
+# manifest = manifest_from_stac_search(
+#     scenes=my_scenes,
+#     chip_size_m=256.0,
+#     collection_inputs=(skysat_input,),
+#     date_range=date_range,
+# )
 ```
 
 ## Recipe 2: Compute NDVI at Sub-Meter Resolution
@@ -134,7 +131,8 @@ skysat_input = CollectionInput(
 
 superdove_input = CollectionInput(
     collection_name=CollectionName.SUPERDOVE,
-    resolution=3.0,  # native resolution
+    # resolution defaults to 1.0 (Data Engine stored resolution)
+    # native sensor GSD is ~3m but data is stored oversampled at 1.0m
 )
 
 # Use both as inputs to a data engine Plan for multi-sensor analysis

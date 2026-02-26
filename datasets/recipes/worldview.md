@@ -26,8 +26,8 @@ catalog and the `hum_ai.data_engine` library.
 | Yellow             | Yellow           | 610             | 1.84    |
 | Red                | Red              | 660             | 1.84    |
 | Red Edge           | Red Edge         | 730             | 1.84    |
-| Near-Infrared 1    | NIR1             | 835             | 1.84    |
-| Near-Infrared 2    | NIR2             | 950             | 1.84    |
+| Near-Infrared 1    | Near-Infrared 1  | 835             | 1.84    |
+| Near-Infrared 2    | Near-Infrared 2  | 950             | 1.84    |
 
 ## Recipe 1: Search and Load WorldView Imagery
 

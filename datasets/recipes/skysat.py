@@ -31,6 +31,7 @@ from hum_ai.data_engine.ingredients import (
     Range,
 )
 from hum_ai.data_engine.manifest import manifest_from_stac_search
+from hum_ai.data_engine.scene import Scene
 
 # ---------------------------------------------------------------------------
 # 1. Inspect SkySat configuration in the data engine
@@ -54,10 +55,10 @@ for idx, obs_type in skysat_band_map.items():
 # Define an area of interest (example: San Francisco waterfront)
 aoi: Polygon = box(-122.42, 37.78, -122.38, 37.81)
 
-# Define a time range to search
-time_range = Range(
-    min=datetime(2023, 6, 1, tzinfo=timezone.utc),
-    max=datetime(2023, 12, 31, tzinfo=timezone.utc),
+# Define a date range to search
+date_range = Range(
+    min=datetime(2023, 6, 1, tzinfo=timezone.utc).date(),
+    max=datetime(2023, 12, 31, tzinfo=timezone.utc).date(),
 )
 
 # Create a CollectionInput using all default SkySat bands and resolution
@@ -69,18 +70,21 @@ skysat_input = CollectionInput(
 
 print(f"\nSearching for SkySat scenes...")
 print(f"  AOI bounds: {aoi.bounds}")
-print(f"  Time range: {time_range}")
+print(f"  Date range: {date_range}")
 print(f"  Bands:      {skysat_input.band_ids}")
 print(f"  Resolution: {skysat_input.resolution}m")
 
 # Execute the catalog search
-manifest = manifest_from_stac_search(
-    collections=[skysat_input],
-    geometry=aoi,
-    time_range=time_range,
-)
-
-print(f"  Found {len(manifest.scenes)} scene(s)")
+# manifest_from_stac_search requires Scene objects, a chip size in meters,
+# collection inputs, and a date range.
+# Example (requires Scene objects from your project configuration):
+#
+# manifest = manifest_from_stac_search(
+#     scenes=my_scenes,
+#     chip_size_m=256.0,
+#     collection_inputs=(skysat_input,),
+#     date_range=date_range,
+# )
 
 # ---------------------------------------------------------------------------
 # 3. Configure SkySat with a subset of bands (Red + NIR for NDVI)

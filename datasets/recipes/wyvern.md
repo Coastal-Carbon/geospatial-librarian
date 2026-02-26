@@ -233,4 +233,4 @@ collection_inputs = (
 To check what Wyvern data is available for a given area, use the Data Engine's
 catalog search functionality. The holdings are indexed in Hum's STAC database and
 can be queried by bounding box and time range via the standard search interface
-(see `hum_ai.data_engine.catalog.search`).
+(see `hum_ai.data_engine.catalog.stac_utils` and `hum_ai.data_engine.ancillary.search`).

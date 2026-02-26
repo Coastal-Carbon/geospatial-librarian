@@ -262,40 +262,39 @@ multi_source_inputs = (
 
 
 # ---------------------------------------------------------------------------
-# 11. Full project definition example
+# 11. Time-range filtering example
 # ---------------------------------------------------------------------------
-# This shows how Wyvern fits into a complete Data Engine project workflow.
+# This shows how to define a time range for filtering Wyvern scenes.
+# NOTE: ProjectDefinition does not exist in the data-engine library.
+# Use CollectionInput with catalog_filters or the search API directly.
 
 from datetime import datetime, timezone
 
-from hum_ai.data_engine.ingredients import ProjectDefinition, Range
+from hum_ai.data_engine.ingredients import Range
 
-# Define an H3 cell for the area of interest (example: resolution 5 cell)
-h3_cell_id = '852a100bfffffff'  # replace with your actual H3 cell
+# Define a time range for your analysis
+time_range = Range(
+    min=datetime(2024, 1, 1, tzinfo=timezone.utc),
+    max=datetime(2025, 1, 1, tzinfo=timezone.utc),
+)
 
-project_definition = ProjectDefinition(
-    name='Wyvern Hyperspectral Analysis',
-    description='Hyperspectral feature extraction using Wyvern 23-band imagery',
-    collection_inputs=(
-        CollectionInput(
-            collection_name=CollectionName.WYVERN,
-        ),
-    ),
-    region=h3_cell_id,
-    time_range=Range(
-        min=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        max=datetime(2025, 1, 1, tzinfo=timezone.utc),
-    ),
+# Create a Wyvern CollectionInput (project-level configuration is handled
+# by the specific format recipe, e.g., ImageChipsV3Configuration or
+# OlmoEarthSamplesV1Configuration — not a generic ProjectDefinition class)
+wyvern_for_project = CollectionInput(
+    collection_name=CollectionName.WYVERN,
 )
 
 
 # ---------------------------------------------------------------------------
 # 12. Checking data holdings for Wyvern
 # ---------------------------------------------------------------------------
-# Use the catalog search to discover what Wyvern scenes exist for an area.
-
-from hum_ai.data_engine.catalog.search import search
-
+# Use the STAC catalog utilities to discover what Wyvern scenes exist for an
+# area. The search functions are in the catalog and ancillary modules:
+#
+#   from hum_ai.data_engine.catalog.stac_utils import ...
+#   from hum_ai.data_engine.ancillary.search import search
+#
 # The search function queries Hum's internal STAC FastAPI for the 'wyvern'
 # collection. Only scenes that Hum has ingested will be returned.
 

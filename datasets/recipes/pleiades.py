@@ -100,41 +100,42 @@ multi_source_inputs = (
 )
 
 # ---------------------------------------------------------------------------
-# 8. Full project definition example
+# 8. Full pipeline example — search the catalog and build a manifest
 # ---------------------------------------------------------------------------
-# This shows how Pleiades fits into a complete Data Engine project workflow.
+# This shows how Pleiades fits into a Data Engine workflow using
+# manifest_from_stac_search, which is the real entry point for catalog queries.
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from hum_ai.data_engine.ingredients import ProjectDefinition, Range
+from hum_ai.data_engine.ingredients import Range
+from hum_ai.data_engine.manifest import manifest_from_stac_search
+from hum_ai.data_engine.scene import Scene
 
-# Define an H3 cell for the area of interest (example: resolution 5 cell)
-h3_cell_id = '852a100bfffffff'  # replace with your actual H3 cell
-
-project_definition = ProjectDefinition(
-    name='Pleiades VHR Analysis',
-    description='High-resolution feature extraction using Pleiades multispectral imagery',
-    collection_inputs=(
-        CollectionInput(
-            collection_name=CollectionName.PLEIADES,
-        ),
-    ),
-    region=h3_cell_id,
-    time_range=Range(
-        min=datetime(2023, 1, 1, tzinfo=timezone.utc),
-        max=datetime(2024, 1, 1, tzinfo=timezone.utc),
-    ),
-)
+# Build a manifest by searching the STAC catalog for Pleiades scenes.
+# The manifest_from_stac_search function requires:
+#   - scenes: tuple of Scene objects defining the regions of interest
+#   - chip_size_m: chip edge length in meters (used to buffer geometries)
+#   - collection_inputs: the CollectionInput objects specifying bands/resolution
+#   - date_range: a Range[date] for the temporal constraint
+#
+# Example (requires Scene objects from your project configuration):
+#
+# manifest = manifest_from_stac_search(
+#     scenes=my_scenes,
+#     chip_size_m=256.0,
+#     collection_inputs=(
+#         CollectionInput(collection_name=CollectionName.PLEIADES),
+#     ),
+#     date_range=Range(min=date(2023, 1, 1), max=date(2024, 1, 1)),
+# )
 
 # ---------------------------------------------------------------------------
 # 9. Checking data holdings for Pleiades
 # ---------------------------------------------------------------------------
-# Use the catalog search to discover what Pleiades scenes exist for an area.
-
-from hum_ai.data_engine.catalog.search import search
-
-# The search function queries Hum's internal STAC FastAPI for the 'pleiades'
-# collection. Only scenes that Hum has ingested will be returned.
+# Use the STAC search to discover what Pleiades scenes exist for an area.
+# The search functionality is provided by hum_ai.stac.search, which queries
+# Hum's internal STAC FastAPI for the 'pleiades' collection. Only scenes
+# that Hum has ingested will be returned.
 
 # ---------------------------------------------------------------------------
 # 10. COLLECTION_BAND_MAP reference — maps band index to ObservationType
