@@ -1,0 +1,126 @@
+id: cop-dem
+name: Copernicus DEM (GLO-30 / GLO-90)
+provider: European Space Agency (ESA) / Airbus Defence and Space
+
+spatial:
+  resolution: |
+    GLO-30: 30m (~1 arc-second) posting — the standard free product.
+    GLO-90: 90m (~3 arc-second) posting — lower resolution alternative.
+    Both are Digital Surface Models (DSM), meaning they include the
+    height of buildings, trees, and other surface features — not bare earth.
+  coverage: >
+    Global land surfaces. GLO-30 has full global coverage with a few
+    small void areas filled from other sources. GLO-90 is available
+    everywhere. Derived from the WorldDEM product based on TanDEM-X
+    radar interferometry.
+  coordinate_system: WGS84 / EGM2008 geoid (EPSG:4326 horizontal, EGM2008 vertical)
+
+temporal:
+  cadence: >
+    Static product — represents a single time period (approximately
+    2011-2015 acquisitions). No temporal updates. Copernicus DEM
+    releases are versioned but represent reprocessing improvements,
+    not new temporal snapshots.
+  archive_start: "2021 (first public release of GLO-30); source data from ~2011-2015"
+  latency: N/A — static product with periodic version updates.
+
+layers:
+  - "DEM (elevation values in meters above EGM2008 geoid)"
+  - "EDM (Editing Mask — indicates quality and source of each pixel)"
+  - "FLM (Filling Mask — indicates void-filled areas)"
+  - "HEM (Height Error Mask — per-pixel vertical accuracy estimate)"
+  - "WBM (Water Body Mask)"
+
+formats:
+  native: GeoTIFF (1° x 1° tiles)
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). Most cloud platforms serve it
+    pre-tiled and cloud-optimized. Derivative products (slope, aspect,
+    hillshade) are often pre-computed by platforms.
+
+access:
+  method: >
+    Copernicus Space Data Ecosystem (CDSE) for direct download.
+    Panda catalogue (Copernicus) for browsing and download by tile.
+  auth: Free registration required at dataspace.copernicus.eu
+  alternatives: >
+    AWS Open Data (copernicus-dem-30m and copernicus-dem-90m buckets,
+    COG format via STAC). Microsoft Planetary Computer (STAC API).
+    Google Earth Engine (as 'COPERNICUS/DEM/GLO30').
+    OpenTopography for download and derivative products.
+
+strengths: |
+  The best free global elevation dataset currently available. Significantly
+  better quality than SRTM (its predecessor) with fewer voids, less noise,
+  and better accuracy in mountainous terrain and high-latitude regions.
+
+  Vertical accuracy is typically 2-4m absolute (LE90) in open terrain,
+  which is sufficient for most hydrological modeling, viewshed analysis,
+  terrain classification, and slope-dependent applications.
+
+  Being a DSM (including surface features like buildings and trees),
+  it can provide information about canopy height and urban morphology
+  when differenced with a bare-earth DEM, though this is approximate.
+
+  Derivative products (slope, aspect, hillshade, curvature, roughness,
+  topographic position index) are straightforward to compute and widely
+  useful as ancillary layers in land cover classification, habitat
+  modeling, and site suitability analysis.
+
+  The Height Error Mask (HEM) provides per-pixel accuracy estimates,
+  which is unusual and valuable for uncertainty-aware applications.
+
+limitations: |
+  Digital Surface Model, not Digital Terrain Model — in forested areas,
+  the elevation represents canopy top, not ground surface. This can
+  introduce errors of 10-30m in dense forest when bare-earth elevation
+  is needed. For bare-earth DEM in forested areas, lidar-derived
+  products are preferable (where available).
+
+  30m posting means it cannot resolve terrain features smaller than
+  roughly 30-60m. Individual buildings affect the DSM but their
+  shapes are not resolved. For detailed urban terrain modeling or
+  fine-scale hydrological routing, higher-resolution DEMs (lidar, or
+  commercial stereo-derived) are necessary.
+
+  Static product from ~2011-2015 — does not reflect terrain changes
+  from mining, construction, landslides, or other surface modifications
+  since then. Major construction projects (new reservoirs, large
+  developments) will not be represented.
+
+  Vertical datum is EGM2008 geoid, not ellipsoidal height. For
+  applications requiring ellipsoidal heights (GPS integration, precise
+  surveying), a geoid-ellipsoid separation correction is needed.
+
+  Quality is lower over water bodies (which appear as flat surfaces
+  at an approximate water level) and in areas with heavy radar shadow
+  or layover in the original TanDEM-X acquisitions (steep mountain
+  slopes, deep valleys).
+
+preprocessing_notes: |
+  For hydrological applications, the DSM nature means you should
+  consider hydrological conditioning (filling sinks, breaching dams)
+  before computing flow direction and accumulation. Standard tools:
+  WhiteboxTools, SAGA GIS, or TauDEM.
+
+  Derivative computation: slope, aspect, hillshade, and curvature can
+  be computed with GDAL (gdaldem), QGIS, or any GIS platform. For
+  large areas, cloud processing (GEE) avoids tile-edge artifacts.
+
+  When mosaicking tiles, the 1° x 1° tiling means you'll need to merge
+  tiles for most study areas. gdal_merge.py or gdalwarp handles this,
+  or use a VRT (Virtual Raster) to avoid creating huge merged files.
+
+  For integration with optical imagery (Sentinel-2, Landsat),
+  reproject to match the imagery CRS (typically UTM) rather than
+  working in geographic coordinates. The elevation values in meters
+  are preserved through reprojection.
+
+  The EGM2008 vertical datum means elevation values are approximately
+  "height above mean sea level." For precise vertical work, know that
+  the geoid-ellipsoid separation can be 10-100m depending on location.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # Terrain correction, elevation as classification feature
+  - landsat-8-9     # Same uses as Sentinel-2 pairing
+  - osm-features    # Infrastructure routing with terrain context

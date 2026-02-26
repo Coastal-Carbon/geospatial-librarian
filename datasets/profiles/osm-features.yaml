@@ -1,0 +1,133 @@
+id: osm-features
+name: OpenStreetMap Vector Features
+provider: OpenStreetMap Foundation / Community Contributors
+
+spatial:
+  resolution: >
+    Feature-level. Individual buildings, roads, parking lots, waterways,
+    land use polygons, and points of interest are mapped as discrete
+    vector geometries (points, lines, polygons) with attribute tags.
+  coverage: >
+    Global, but completeness varies enormously by region. Urban areas in
+    North America, Western Europe, and Japan tend to be very well-mapped.
+    Rural areas, developing countries, and some suburban areas may have
+    significant gaps. Coverage is a function of volunteer mapper activity.
+  coordinate_system: WGS84 (EPSG:4326)
+
+temporal:
+  cadence: >
+    Continuous community edits — the dataset is updated in near real-time
+    as mappers contribute. However, any individual feature may not have
+    been updated in years. There is no systematic revisit schedule.
+  archive_start: "2004 (project founding); substantial coverage from ~2010 onward"
+  latency: Near real-time for individual edits. Bulk extracts update daily to weekly.
+
+feature_classes:
+  - "buildings (building=*) — footprint polygons with type tags"
+  - "parking (amenity=parking) — surface lots and structures"
+  - "roads (highway=*) — full road network hierarchy from motorways to footpaths"
+  - "land use (landuse=*) — residential, commercial, industrial, agricultural zones"
+  - "natural features (natural=*) — water bodies, forests, beaches, peaks"
+  - "waterways (waterway=*) — rivers, streams, canals"
+  - "points of interest — shops, restaurants, hospitals, schools, etc."
+  - "administrative boundaries (admin_level=*) — countries to neighborhoods"
+  - "power infrastructure, railways, pipelines, and many more"
+
+formats:
+  native: >
+    OSM XML or PBF (Protocolbuffer Binary Format). The full planet
+    file is ~70GB compressed in PBF format.
+  common_conversions: >
+    GeoJSON, GeoPackage, Shapefile, GeoParquet. Thematic extracts
+    are typically served in these formats by downstream providers.
+
+access:
+  method: >
+    Planet.osm download from planet.openstreetmap.org for the full
+    dataset. For most use cases, use a thematic extract service instead.
+    Overpass API for targeted queries by feature type and geographic area.
+  auth: Free, no registration required for most access methods.
+  alternatives: >
+    Geofabrik daily extracts (regional PBF/Shapefile files — most common
+    for bulk regional data). BBBike extracts for custom geographic areas.
+    HOT (Humanitarian OpenStreetMap Team) Export Tool for custom thematic
+    extracts. Overture Maps Foundation (incorporates OSM data with quality
+    improvements). ohsome API for historical OSM analysis.
+    Microsoft Building Footprints and Google Open Buildings provide
+    ML-derived alternatives for building coverage gaps.
+
+strengths: |
+  The only free, global, feature-level vector dataset with semantic labels.
+  When OSM coverage is good for your area of interest, it provides exactly
+  what many analyses need: pre-classified features with polygon boundaries
+  that can be used directly without any image interpretation or
+  classification workflow.
+
+  Rich attribute tagging system means features carry meaningful metadata
+  beyond just geometry — building type, road surface material, number of
+  lanes, opening hours for POIs, etc. This semantic richness is unique
+  among free global datasets.
+
+  For training machine learning models on satellite or aerial imagery,
+  OSM features are widely used as training labels (e.g., building
+  footprints from OSM used to train a building detector on Sentinel-2
+  or NAIP imagery).
+
+  The Overpass API allows very specific queries — you can request all
+  parking lots within a bounding box, or all hospitals within a city,
+  without downloading the entire regional dataset.
+
+  Active community means features are generally kept up-to-date in
+  well-mapped areas. New construction, demolished buildings, and road
+  changes are often reflected within weeks to months.
+
+limitations: |
+  Coverage inconsistency is the fundamental limitation. A parking lot
+  analysis using OSM might find 95% of lots in Portland, Oregon but
+  only 30% in a rural Texas county. You cannot assume completeness
+  without checking coverage for your specific AOI first.
+
+  No systematic quality assurance — data quality depends on individual
+  mapper skill and local community standards. Geometry precision varies,
+  attribute completeness varies, and there can be tagging inconsistencies
+  (e.g., some mappers tag parking lots as amenity=parking, others as
+  landuse=surface).
+
+  Historical analysis is possible through the ohsome API but requires
+  specialized tooling. The standard extracts only give you the current
+  state, not what existed at a past date.
+
+  License (ODbL) requires attribution and share-alike for derived
+  databases. This is not an issue for most analyses but can be a
+  constraint for some commercial products.
+
+  Not a remotely sensed dataset — it cannot tell you about surface
+  properties, spectral characteristics, elevation, or anything that
+  requires physical measurement. It tells you what humans have labeled,
+  not what sensors have detected.
+
+preprocessing_notes: |
+  For targeted extraction, use the Overpass API with a query like:
+  [out:json];area[name="Phoenix"]->.searchArea;
+  (way["amenity"="parking"](area.searchArea););out body;>;out skel qt;
+
+  Geofabrik regional extracts are the easiest starting point for
+  bulk processing. Download the PBF file for your region and filter
+  with osmium, ogr2ogr, or osm2pgsql.
+
+  Tag interpretation requires familiarity with the OSM tagging schema.
+  The OSM Wiki (wiki.openstreetmap.org) documents the tag conventions.
+  Be prepared for some features using non-standard or deprecated tags.
+
+  For building footprints specifically, consider also checking Microsoft
+  Building Footprints and Google Open Buildings, which may fill coverage
+  gaps in areas where OSM mapping is sparse.
+
+  When using OSM as training labels for ML models, be aware of label
+  noise — OSM geometries may not align perfectly with imagery,
+  especially in areas with older or less precise mapping.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # OSM labels + Sentinel imagery for classification
+  - naip            # OSM labels + NAIP for fine-scale feature extraction
+  - cop-dem         # Terrain context for infrastructure mapping

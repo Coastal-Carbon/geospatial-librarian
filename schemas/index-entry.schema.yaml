@@ -1,0 +1,66 @@
+# Schema for Tier 1 index entries (datasets/index.yaml)
+# Each dataset in the index should have these fields.
+# The index is loaded fully into the librarian agent's context
+# so entries should be concise — detailed info goes in the full profile.
+
+fields:
+  id:
+    type: string
+    required: true
+    description: >
+      Unique identifier for the dataset. Use lowercase with hyphens.
+      This must match the filename in datasets/profiles/{id}.yaml
+
+  name:
+    type: string
+    required: true
+    description: >
+      Human-readable name of the dataset.
+
+  type:
+    type: string
+    required: true
+    enum: [raster, vector, point-cloud, tabular]
+    description: >
+      Primary geometry/data type.
+
+  modality:
+    type: string
+    required: true
+    description: >
+      How the data was collected or what kind of information it represents.
+      Examples: optical-multispectral, optical-rgb, SAR, lidar, elevation,
+      crowdsourced-features, administrative-boundaries, land-cover-classification,
+      weather-climate, demographic-census
+
+  resolution:
+    type: string
+    required: true
+    description: >
+      Spatial resolution in human-readable form. For raster, use the
+      ground sample distance (e.g., "10m", "30m", "0.6m"). For vector,
+      use "feature-level". For tabular, use the aggregation unit
+      (e.g., "census-tract", "county").
+
+  coverage:
+    type: string
+    required: true
+    description: >
+      Geographic coverage. Be specific about limitations.
+      Examples: "global", "CONUS only", "global land surfaces",
+      "global but variable completeness"
+
+  key_traits:
+    type: string (multiline)
+    required: true
+    description: >
+      2-4 sentences describing what this dataset CAN PERCEIVE or DISTINGUISH.
+      Do NOT list specific applications — instead describe the capabilities
+      that allow the agent to REASON about applicability.
+
+      Good: "Distinguishes vegetation, water, bare soil, and built surfaces
+      at 10m resolution. Multitemporal analysis possible with 5-day revisit.
+      Free and open access."
+
+      Bad: "Used for parking lot detection, crop monitoring, flood mapping..."
+      (This pre-enumerates uses instead of describing capabilities.)

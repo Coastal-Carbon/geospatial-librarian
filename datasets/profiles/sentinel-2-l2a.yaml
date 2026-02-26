@@ -1,0 +1,131 @@
+id: sentinel-2-l2a
+name: Sentinel-2 Level-2A Surface Reflectance
+provider: European Space Agency (ESA) / Copernicus Programme
+
+spatial:
+  resolution: |
+    10m: B02 (Blue), B03 (Green), B04 (Red), B08 (NIR)
+    20m: B05-B07 (Red Edge), B8A (Narrow NIR), B11-B12 (SWIR)
+    60m: B01 (Coastal Aerosol), B09 (Water Vapor), B10 (Cirrus)
+  coverage: >
+    Global land surfaces between 56°S and 84°N latitude.
+    No coverage over open ocean (by design — land mission).
+    Some small islands may have gaps.
+  coordinate_system: UTM zones / WGS84 (EPSG varies by zone)
+
+temporal:
+  cadence: >
+    5-day revisit at the equator using both Sentinel-2A and 2B.
+    Higher effective revisit at higher latitudes due to orbit overlap.
+    In practice, cloud cover reduces usable revisit to ~10-15 days
+    in many temperate regions.
+  archive_start: "2015-06-23 (Sentinel-2A); 2017-03-07 (Sentinel-2B)"
+  latency: >
+    Typically 24-48 hours from acquisition to availability on
+    Copernicus Data Space Ecosystem. Near real-time products
+    available through some commercial platforms.
+
+bands:
+  - "B01 - Coastal Aerosol (443nm, 60m)"
+  - "B02 - Blue (490nm, 10m)"
+  - "B03 - Green (560nm, 10m)"
+  - "B04 - Red (665nm, 10m)"
+  - "B05 - Red Edge 1 (705nm, 20m)"
+  - "B06 - Red Edge 2 (740nm, 20m)"
+  - "B07 - Red Edge 3 (783nm, 20m)"
+  - "B08 - NIR (842nm, 10m)"
+  - "B8A - Narrow NIR (865nm, 20m)"
+  - "B09 - Water Vapor (945nm, 60m)"
+  - "B10 - Cirrus (1375nm, 60m)"
+  - "B11 - SWIR 1 (1610nm, 20m)"
+  - "B12 - SWIR 2 (2190nm, 20m)"
+  - "SCL - Scene Classification Layer (20m, derived)"
+
+formats:
+  native: JP2 (JPEG2000) tiles in SAFE directory structure
+  common_conversions: >
+    GeoTIFF, Cloud-Optimized GeoTIFF (COG). Most cloud platforms
+    (GEE, Planetary Computer) serve it pre-converted to COG.
+
+access:
+  method: >
+    Copernicus Data Space Ecosystem (CDSE) — OData API and S3-compatible
+    object storage. Also available through the Copernicus Browser for
+    interactive exploration and download.
+  auth: Free registration required at dataspace.copernicus.eu
+  alternatives: >
+    Google Earth Engine (free for research/education, commercial licensing
+    available). Microsoft Planetary Computer (free, STAC API). AWS Open Data
+    Registry (requester-pays S3 bucket). Element 84 Earth Search STAC API.
+
+strengths: |
+  The best free multispectral satellite imagery for most land surface
+  applications. The combination of 10m visible/NIR bands with 20m red edge
+  and SWIR bands makes it uniquely versatile — you can do everything from
+  basic RGB visual inspection to sophisticated vegetation indices (NDVI, EVI,
+  NDRE), water detection (NDWI, MNDWI), burn severity (NBR), and built-up
+  area mapping.
+
+  The 10m visible bands are sufficient to identify individual buildings,
+  large parking lots, road networks, agricultural field boundaries, and
+  other features roughly 10m or larger. The 5-day revisit enables time
+  series analysis for change detection, crop monitoring, and seasonal
+  pattern analysis.
+
+  L2A processing means atmospherically corrected surface reflectance —
+  you can compare values across dates and locations without additional
+  atmospheric correction. The SCL (Scene Classification Layer) provides
+  per-pixel cloud, shadow, water, and vegetation masks.
+
+  Massively supported ecosystem: virtually every geospatial platform,
+  tutorial, and tool chain supports Sentinel-2. Finding help is easy.
+
+limitations: |
+  Cannot see through clouds — this is the primary operational constraint.
+  In tropical regions and maritime climates, cloud-free imagery may only
+  be available a few times per year. Composite/mosaic approaches help
+  but introduce temporal mixing.
+
+  10m resolution cannot resolve individual cars, small structures (<10m),
+  or fine details like sidewalks, driveways, or garden features. For
+  sub-building-scale analysis, you need aerial imagery (NAIP) or
+  commercial very-high-resolution satellites.
+
+  No thermal infrared band — cannot measure surface temperature. For
+  thermal applications (urban heat islands, fire hotspots, water
+  temperature), use Landsat 8/9 instead.
+
+  Tile boundaries follow the Military Grid Reference System (MGRS),
+  which doesn't align with UTM zone boundaries or administrative
+  boundaries. Mosaicking across tiles requires handling overlaps and
+  potential slight radiometric differences at edges.
+
+  Archive only goes back to 2015 — for historical analysis before that,
+  Landsat provides continuity back to 1972.
+
+preprocessing_notes: |
+  L2A is already atmospherically corrected, so no additional atmospheric
+  correction is needed for most applications.
+
+  Cloud masking: Use the SCL band for basic cloud/shadow masking. For
+  more aggressive masking, consider s2cloudless (available in GEE and
+  as a Python library). The SCL occasionally misclassifies bright
+  buildings or sand as cloud, and can miss thin cirrus.
+
+  Mosaicking across UTM zones requires reprojection — tiles near zone
+  boundaries will be in different CRS. Decide on a target CRS before
+  mosaicking.
+
+  For time series analysis, consider using harmonized Sentinel-2 (available
+  on GEE) which accounts for the processing baseline change in January 2022
+  that shifted some band values.
+
+  If working with 20m bands alongside 10m bands, you'll need to resample.
+  Bilinear or cubic resampling is typical for continuous data; nearest
+  neighbor for classification inputs.
+
+commonly_paired_with:
+  - naip  # For higher-resolution validation or detail
+  - landsat-8-9  # For thermal band or longer time series
+  - cop-dem  # For terrain correction or slope analysis
+  - osm-features  # For training labels or validation

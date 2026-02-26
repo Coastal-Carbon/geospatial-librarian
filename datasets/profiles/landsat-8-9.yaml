@@ -1,0 +1,136 @@
+id: landsat-8-9
+name: Landsat 8 & 9 Collection 2 Level-2 Surface Reflectance / Surface Temperature
+provider: USGS / NASA
+
+spatial:
+  resolution: |
+    30m: Visible (Blue, Green, Red), NIR, SWIR 1, SWIR 2
+    15m: Panchromatic band (B8, Landsat 8 and 9)
+    100m: Thermal Infrared (TIRS bands, resampled to 30m in distributed products)
+  coverage: >
+    Global land surfaces. Near-polar orbit provides complete global coverage
+    between ~82°N and 82°S. Coverage includes open ocean scenes near coastlines.
+  coordinate_system: UTM / WGS84 (scene-based, per path/row)
+
+temporal:
+  cadence: >
+    16-day revisit per satellite. With both Landsat 8 and 9 operating,
+    effective revisit is 8 days. Combined with Sentinel-2 in the
+    Harmonized Landsat Sentinel (HLS) product, effective revisit
+    approaches 2-3 days.
+  archive_start: >
+    Landsat 8: 2013-02-11. Landsat 9: 2021-09-27.
+    The broader Landsat program archive extends back to 1972 (Landsat 1),
+    providing the longest continuous satellite Earth observation record.
+    Collection 2 reprocessing provides consistent calibration across
+    the full archive.
+  latency: >
+    Typically 12-24 hours for Level-1 products. Level-2 (surface
+    reflectance/temperature) available within a few days.
+
+bands:
+  - "B1 - Coastal Aerosol (443nm, 30m)"
+  - "B2 - Blue (482nm, 30m)"
+  - "B3 - Green (562nm, 30m)"
+  - "B4 - Red (655nm, 30m)"
+  - "B5 - NIR (865nm, 30m)"
+  - "B6 - SWIR 1 (1609nm, 30m)"
+  - "B7 - SWIR 2 (2201nm, 30m)"
+  - "B8 - Panchromatic (592nm, 15m)"
+  - "B10 - Thermal Infrared 1 (10895nm, 100m)"
+  - "B11 - Thermal Infrared 2 (12005nm, 100m, Landsat 8 only — not recommended for quantitative use)"
+  - "QA_PIXEL - Quality Assessment band with cloud, shadow, snow, water flags"
+
+formats:
+  native: GeoTIFF (per-band files in a tar archive)
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). Available as COG on most cloud
+    platforms. HLS product merges Landsat and Sentinel-2 into a
+    common format and grid.
+
+access:
+  method: >
+    USGS EarthExplorer (interactive search and download).
+    USGS M2M (Machine-to-Machine) API for programmatic access.
+    AWS Open Data as COG with STAC API.
+  auth: >
+    Free. USGS EarthExplorer requires registration.
+    AWS/cloud access typically requires platform account.
+  alternatives: >
+    Google Earth Engine (as 'LANDSAT/LC08/C02/T1_L2' and 'LANDSAT/LC09/C02/T1_L2').
+    Microsoft Planetary Computer. Amazon S3 (usgs-landsat bucket).
+    HLS product available through NASA LPDAAC and GEE.
+
+strengths: |
+  Two unique advantages over Sentinel-2: a thermal infrared band and a
+  50+ year archive.
+
+  The thermal band (100m, resampled to 30m) enables surface temperature
+  measurement — essential for urban heat island analysis, wildfire
+  monitoring, evapotranspiration estimation, water temperature monitoring,
+  and thermal anomaly detection. No other free satellite dataset provides
+  co-registered thermal and optical multispectral data.
+
+  The Landsat archive (back to 1972 with Landsat 1-5, 7) is irreplaceable
+  for long-term change analysis. Urbanization over decades, deforestation
+  trajectories, glacial retreat, and coastline change all require this
+  historical depth. Collection 2 reprocessing ensures consistent
+  calibration across the full archive.
+
+  30m resolution with similar spectral bands to Sentinel-2 means most
+  classification and analysis methods transfer between the two. The HLS
+  product harmonizes them into a single time series, effectively giving
+  you 2-3 day revisit at 30m.
+
+  Pan-sharpening with the 15m panchromatic band can improve effective
+  resolution for visual interpretation, though the spectral information
+  is still at 30m.
+
+limitations: |
+  30m resolution is 3x coarser than Sentinel-2's 10m visible bands.
+  Features that are marginally detectable in Sentinel-2 (individual
+  large buildings, road networks) are often indistinguishable in Landsat.
+  For feature extraction at building or parcel scale, Landsat is
+  generally insufficient.
+
+  No red edge bands — Sentinel-2's red edge bands (705-783nm) provide
+  better vegetation characterization. For precision vegetation analysis,
+  Sentinel-2 is preferred.
+
+  16-day revisit (8-day with both satellites) is coarser than Sentinel-2's
+  5-day revisit, meaning fewer cloud-free opportunities per time period.
+
+  The thermal bands are at 100m native resolution (resampled to 30m in
+  products), which limits thermal analysis to relatively coarse spatial
+  patterns.
+
+  Landsat 7 data (1999-2022) has the well-known SLC-off striping issue
+  starting in 2003, requiring gap-filling for continuous spatial coverage.
+
+preprocessing_notes: |
+  Collection 2 Level-2 products are already atmospherically corrected
+  to surface reflectance (optical) and surface temperature (thermal).
+  No additional atmospheric correction needed for most applications.
+
+  Cloud masking: Use the QA_PIXEL band. The Fmask algorithm underlying
+  the QA flags is generally reliable but can struggle with bright
+  surfaces (salt flats, snow edges) and thin cirrus.
+
+  For cross-sensor time series with Sentinel-2, use the Harmonized
+  Landsat Sentinel (HLS) product rather than trying to manually
+  harmonize the two datasets. HLS handles bandpass differences,
+  BRDF normalization, and gridding to a common tiling system.
+
+  Landsat scenes follow the WRS-2 path/row system. For area-based
+  work, you'll need to identify which path/row(s) cover your AOI
+  using the WRS-2 reference shapefile.
+
+  Thermal band calibration: For quantitative surface temperature work,
+  be aware that the B11 thermal band on Landsat 8 has known stray
+  light issues and USGS does not recommend it for quantitative use.
+  Use B10 only.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # For higher spatial resolution and more frequent revisit
+  - cop-dem         # For terrain correction and topographic analysis
+  - naip            # For high-resolution validation of classification results

@@ -1,0 +1,147 @@
+# Schema for Tier 2 full dataset profiles (datasets/profiles/{id}.yaml)
+# These files contain everything the librarian needs for deep reasoning.
+# They are loaded on-demand — only when the agent identifies a dataset
+# as a candidate based on the Tier 1 index.
+
+fields:
+
+  # === Identity (must match index entry) ===
+  id:
+    type: string
+    required: true
+
+  name:
+    type: string
+    required: true
+
+  provider:
+    type: string
+    required: true
+    description: >
+      Organization that produces or maintains the dataset.
+
+  # === Spatial characteristics ===
+  spatial:
+    type: object
+    required: true
+    fields:
+      resolution:
+        type: string
+        required: true
+        description: >
+          Detailed resolution info. For multi-resolution datasets,
+          list all bands/layers (e.g., "10m visible/NIR, 20m SWIR, 60m atmospheric").
+
+      coverage:
+        type: string
+        required: true
+        description: >
+          Geographic extent with specifics on any gaps or limitations.
+
+      coordinate_system:
+        type: string
+        required: true
+        description: >
+          Native CRS. Examples: "UTM / WGS84", "EPSG:4326", "Web Mercator"
+
+  # === Temporal characteristics ===
+  temporal:
+    type: object
+    required: false
+    description: >
+      Omit for static datasets (e.g., a single DEM release).
+    fields:
+      cadence:
+        type: string
+        description: "How often new data is acquired. e.g., '5-day revisit', 'annual', 'continuous community edits'"
+
+      archive_start:
+        type: string
+        description: "When the archive begins. ISO date or descriptive (e.g., '2015-06-23', 'ongoing since 2008')"
+
+      latency:
+        type: string
+        description: "Time from acquisition to availability. e.g., '24-48 hours', 'near real-time', 'annual release cycle'"
+
+  # === Data content ===
+  bands:
+    type: list of strings
+    required: false
+    description: >
+      For raster imagery. List spectral bands with wavelength info.
+      e.g., "B02 (Blue, 490nm)", "B08 (NIR, 842nm)"
+
+  feature_classes:
+    type: list of strings
+    required: false
+    description: >
+      For vector data. What features are included.
+      e.g., "buildings", "parking lots", "roads", "waterways"
+
+  layers:
+    type: list of strings
+    required: false
+    description: >
+      For multi-layer datasets (e.g., DEMs with slope, aspect, hillshade).
+
+  # === Format and access ===
+  formats:
+    type: object
+    required: true
+    fields:
+      native:
+        type: string
+        description: "How the data is distributed. e.g., 'GeoTIFF', 'GeoJSON', 'JP2 in SAFE directory'"
+
+      common_conversions:
+        type: string
+        description: "Formats teams typically convert to. e.g., 'COG (Cloud-Optimized GeoTIFF)', 'GeoParquet'"
+
+  access:
+    type: object
+    required: true
+    fields:
+      method:
+        type: string
+        required: true
+        description: "Primary access method. e.g., API name, download portal, CLI tool"
+
+      auth:
+        type: string
+        required: true
+        description: "Authentication requirements. e.g., 'free registration', 'API key', 'commercial license'"
+
+      alternatives:
+        type: string
+        required: false
+        description: "Other places to get the same data. e.g., 'Also on Google Earth Engine, AWS Open Data'"
+
+  # === Librarian knowledge (prose fields) ===
+  strengths:
+    type: string (multiline)
+    required: true
+    description: >
+      When and why to use this dataset. What makes it the RIGHT choice
+      for certain problems. Write as if you're advising a colleague.
+
+  limitations:
+    type: string (multiline)
+    required: true
+    description: >
+      When NOT to use this dataset. Known quality issues, coverage gaps,
+      resolution constraints, gotchas. Be specific and honest.
+
+  preprocessing_notes:
+    type: string (multiline)
+    required: true
+    description: >
+      What the analyst needs to do before using this data. Cloud masking,
+      reprojection, mosaicking, format conversion, known quirks.
+
+  commonly_paired_with:
+    type: list of dataset IDs
+    required: false
+    description: >
+      Other datasets in the catalog that are frequently used alongside
+      this one. e.g., DEM for terrain correction of satellite imagery,
+      OSM for validation of classification results.

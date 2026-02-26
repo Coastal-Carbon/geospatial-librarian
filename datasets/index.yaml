@@ -1,0 +1,84 @@
+# Geospatial Dataset Library — Tier 1 Index
+# This file is loaded fully into the librarian agent's context.
+# Each entry provides enough information for the agent to identify
+# candidate datasets. Full profiles are in datasets/profiles/{id}.yaml
+#
+# GUIDELINES FOR NEW ENTRIES:
+# - key_traits should describe CAPABILITIES, not list applications
+# - Keep entries concise — detail goes in the full profile
+# - See schemas/index-entry.schema.yaml for field definitions
+
+datasets:
+
+  - id: sentinel-2-l2a
+    name: Sentinel-2 Level-2A Surface Reflectance
+    type: raster
+    modality: optical-multispectral
+    resolution: "10m (visible/NIR), 20m (red edge/SWIR)"
+    coverage: global land surfaces
+    key_traits: |
+      Distinguishes vegetation, water, bare soil, and built surfaces
+      using 13 spectral bands from visible through SWIR. Sufficient
+      resolution to identify features ~10m or larger (buildings, large
+      parking lots, road networks, field boundaries). Multitemporal
+      analysis possible with 5-day revisit. Atmospherically corrected
+      (L2A). Free and open access. Red edge bands uniquely useful for
+      vegetation characterization.
+
+  - id: naip
+    name: NAIP Aerial Imagery
+    type: raster
+    modality: optical-rgb-nir
+    resolution: "0.6m"
+    coverage: CONUS only (continental US)
+    key_traits: |
+      Highest-resolution free imagery for the US. Resolves individual
+      cars, building footprints, driveways, swimming pools, tree crowns,
+      and other features down to ~0.6m. Four bands (RGB + NIR) enable
+      basic vegetation analysis at very high resolution. Leaf-on
+      acquisition (growing season). Acquired every 1-3 years per state —
+      snapshot imagery, not time series. US only.
+
+  - id: osm-features
+    name: OpenStreetMap Vector Features
+    type: vector
+    modality: crowdsourced-features
+    resolution: feature-level
+    coverage: global but variable completeness
+    key_traits: |
+      Pre-labeled vector features with semantic tags: buildings, parking
+      lots, roads, land use, waterways, POIs, admin boundaries, and more.
+      No image interpretation needed — features come with polygon
+      boundaries and attribute metadata. Coverage is excellent in urban
+      areas of US, Europe, Japan; sparse in rural and developing regions.
+      Continuous community updates. Useful as-is or as training labels
+      for ML models on satellite/aerial imagery.
+
+  - id: landsat-8-9
+    name: Landsat 8 & 9 Collection 2
+    type: raster
+    modality: optical-multispectral-thermal
+    resolution: "30m (multispectral), 15m (pan), 100m (thermal)"
+    coverage: global
+    key_traits: |
+      Similar spectral capability to Sentinel-2 but at 30m resolution,
+      PLUS a thermal infrared band for surface temperature measurement
+      and a panchromatic band at 15m. The Landsat archive extends back
+      to 1972 — irreplaceable for long-term change analysis (decades of
+      urbanization, deforestation, glacial retreat). Thermal band is
+      unique among free satellites — enables urban heat island, fire,
+      evapotranspiration, and water temperature analysis.
+
+  - id: cop-dem
+    name: Copernicus DEM (GLO-30)
+    type: raster
+    modality: elevation
+    resolution: "30m"
+    coverage: global
+    key_traits: |
+      Best free global elevation dataset. Digital Surface Model (includes
+      buildings and tree canopy, not bare earth). Vertical accuracy ~2-4m
+      in open terrain. Enables terrain analysis: slope, aspect, hillshade,
+      drainage, viewshed, flood modeling, terrain classification.
+      Static product (~2011-2015 acquisitions). Commonly used as
+      ancillary input to land cover classification and habitat modeling.

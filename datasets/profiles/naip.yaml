@@ -1,0 +1,125 @@
+id: naip
+name: National Agriculture Imagery Program (NAIP)
+provider: USDA Farm Service Agency (FSA)
+
+spatial:
+  resolution: |
+    0.6m (60cm) ground sample distance for most recent acquisitions
+    (2018-present in many states). Older vintages may be 1m.
+    Four spectral bands at the same resolution.
+  coverage: >
+    Continental United States (CONUS) only. Coverage includes all 50 states
+    but Alaska and Hawaii acquisitions are less frequent. Does not cover
+    US territories, and no international coverage whatsoever.
+  coordinate_system: UTM / NAD83 (EPSG varies by zone)
+
+temporal:
+  cadence: >
+    Historically acquired on a 3-year cycle per state (each state imaged
+    once every 3 years on a rotating basis). More recent years have moved
+    toward more frequent national coverage. Imagery is acquired during
+    the agricultural growing season (leaf-on) — typically June through
+    September depending on latitude.
+  archive_start: "2003 (limited coverage); comprehensive national coverage from ~2010"
+  latency: >
+    Several months to over a year from acquisition to public release.
+    NAIP is not a near-real-time product. Expect a vintage to become
+    available 6-18 months after the flying season.
+
+bands:
+  - "Red (visible, ~630-690nm)"
+  - "Green (visible, ~520-600nm)"
+  - "Blue (visible, ~435-495nm)"
+  - "NIR (near-infrared, ~760-900nm)"
+
+formats:
+  native: >
+    MrSID (older) or JPEG2000/GeoTIFF compressed. Distributed as
+    quarter-quad tiles (~3.75' x 3.75' area).
+  common_conversions: >
+    Cloud-Optimized GeoTIFF (COG). Available as COG on most cloud
+    platforms. For large areas, expect to mosaic many tiles.
+
+access:
+  method: >
+    USDA Geospatial Data Gateway for direct download. Also available
+    through commercial cloud platforms with much better query interfaces.
+  auth: >
+    Free, no registration required for direct USDA access.
+    Cloud platform access may require platform account (free tier available).
+  alternatives: >
+    Google Earth Engine (as 'USDA/NAIP/DOQQ'). Microsoft Planetary Computer
+    (STAC API, COG format — this is often the easiest access method).
+    AWS Open Data Registry. USGS EarthExplorer.
+
+strengths: |
+  The highest-resolution free imagery available for the entire continental
+  US. At 0.6m, you can clearly identify individual cars, building
+  footprints, driveways, swimming pools, tree canopy structure, sidewalks,
+  and other fine-scale features that are invisible at Sentinel-2's 10m
+  resolution.
+
+  The NIR band enables basic vegetation analysis (NDVI) at very high
+  resolution, which is extremely useful for urban tree canopy mapping,
+  precision agriculture at the field/plant scale, and distinguishing
+  vegetated vs. impervious surfaces.
+
+  Leaf-on acquisition timing means tree canopy and agricultural vegetation
+  are fully visible, which is ideal for canopy cover analysis and crop
+  type identification.
+
+  As a standardized national program, the imagery is radiometrically
+  consistent within a vintage and orthorectified, making it usable
+  without additional geometric correction.
+
+limitations: |
+  CONUS only — no international coverage at all. This is a hard
+  constraint for any project outside the United States.
+
+  Infrequent temporal coverage (every 1-3 years per state) makes it
+  unsuitable for time series analysis, change detection at fine temporal
+  scales, or monitoring dynamic phenomena. You get snapshots, not movies.
+
+  Leaf-on timing means bare-earth features under tree canopy are
+  obscured. If you need to see ground under trees (e.g., forest floor
+  features, structures under canopy), NAIP won't help.
+
+  Only 4 bands (RGB + NIR) — no red edge, no SWIR, no thermal. This
+  limits spectral analysis compared to Sentinel-2 or Landsat. You can
+  compute NDVI but not more sophisticated vegetation indices like NDRE
+  or moisture indices like NDMI.
+
+  Large data volume — a single state at 0.6m resolution is tens to
+  hundreds of gigabytes. Processing full states requires either cloud
+  compute or significant local storage and processing capability.
+
+  Release lag means you're always working with imagery that's at least
+  6-18 months old. Not suitable for rapid response or current conditions.
+
+preprocessing_notes: |
+  NAIP imagery is already orthorectified and radiometrically consistent
+  within a vintage, so no geometric or atmospheric correction is typically
+  needed for single-vintage analysis.
+
+  For large-area work, you'll need to mosaic many quarter-quad tiles.
+  Using COG-formatted data from Planetary Computer or AWS with a STAC
+  client avoids dealing with individual tile downloads.
+
+  Cross-vintage comparison requires caution — different vintages may have
+  different atmospheric conditions, sun angles, and vegetation states.
+  NAIP is not atmospherically corrected, so absolute reflectance values
+  are not directly comparable across vintages.
+
+  The data is large. For any analysis covering more than a county-sized
+  area, plan for cloud processing (GEE or similar) rather than local
+  processing unless you have substantial compute resources.
+
+  When working at 0.6m resolution, feature extraction methods that work
+  at 10-30m (pixel-based classification) may not work well. Object-based
+  image analysis (OBIA) or deep learning approaches tend to work better
+  at very high resolution.
+
+commonly_paired_with:
+  - sentinel-2-l2a  # For spectral analysis and time series
+  - osm-features    # For training labels at building/parcel scale
+  - cop-dem         # For terrain context
