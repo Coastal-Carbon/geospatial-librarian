@@ -178,10 +178,6 @@ The agent picks up new datasets automatically on its next invocation — no rest
 | **Ancillary** | HWSD2 Soils, GPW Population, U.Delaware Weather, MODIS NBAR | 500m-55km | Free/open |
 | **Vector** | OpenStreetMap | Feature-level | Free/open |
 
-## Task Tracking
-
-This project uses [beads](https://github.com/steveyegge/beads) for dependency-aware issue tracking. Use `bd list` to see open tasks and `bd ready` to find unblocked work.
-
 ## Architecture Context
 
 This is one agent in a planned multi-agent geospatial system:
