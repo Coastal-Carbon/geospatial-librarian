@@ -31,6 +31,8 @@ A Claude Code subagent that maintains a curated catalog of geospatial datasets a
 datasets/
   index.yaml                — Tier 1: lightweight index (loaded fully into context)
   profiles/                 — Tier 2: detailed dataset profiles (loaded on demand)
+    {id}.md                   Natural language guide for each dataset
+    {id}.py                   Python code snippets using hum_ai.data_engine
   recipes/                  — Data Engine access guides and code snippets
     {id}.md                   Natural language guide for each dataset
     {id}.py                   Python code snippets using hum_ai.data_engine
